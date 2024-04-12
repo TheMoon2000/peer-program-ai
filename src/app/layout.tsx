@@ -1,6 +1,12 @@
+/* eslint-disable perfectionist/sort-imports */
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+
+import ThemeProvider from 'src/theme';
+import { primaryFont } from 'src/theme/typography';
+import SnackbarProvider from 'src/components/snackbar/snackbar-provider';
+import { SettingsProvider } from "@/components/settings";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,7 +22,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <SettingsProvider
+          defaultSettings={{
+            themeMode: 'light', // 'light' | 'dark'
+            themeDirection: 'ltr', //  'rtl' | 'ltr'
+            themeContrast: 'default', // 'default' | 'bold'
+            themeLayout: 'horizontal', // 'vertical' | 'horizontal' | 'mini'
+            themeColorPresets: 'blue', // 'default' | 'cyan' | 'purple' | 'blue' | 'orange' | 'red'
+            themeStretch: false,
+          }}
+        >
+          <ThemeProvider>
+            <SnackbarProvider>
+              {children}
+            </SnackbarProvider>
+          </ThemeProvider>
+        </SettingsProvider>
+      </body>
     </html>
   );
 }

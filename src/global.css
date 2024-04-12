@@ -19,9 +19,26 @@
 @import 'yet-another-react-lightbox/plugins/captions.css';
 @import 'yet-another-react-lightbox/plugins/thumbnails.css';
 
+.sa-commercial {
+    display: none !important;
+}
+
+.svc-creator__banner {
+    display: none !important;
+}
+
 .center-content {
     position: absolute;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
+}
+
+a {
+    color: #d1ecfc;
+    color: #68BBE3;
+    main: #0E86D4;
+    dark: #055C9D;
+    darker: #003060;
+    contrastText: #FFFFFF;
 }
