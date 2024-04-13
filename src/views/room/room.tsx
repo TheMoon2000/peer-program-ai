@@ -5,6 +5,7 @@ import Stack from "@mui/material/Stack";
 import Split from "react-split";
 import { Terminal as JTerminal } from "@jupyterlab/terminal";
 import { Terminal } from "@xterm/xterm";
+import { FitAddon } from "@xterm/addon-fit";
 import { useEffect, useRef } from "react";
 import "@xterm/xterm/css/xterm.css";
 import MarkdownTextView from "@/components/MarkdownTextView/MarkdownTextView";
@@ -14,29 +15,37 @@ interface Props {
 }
 
 export default function Room(props: Props) {
-  const terminal = useRef<Terminal | undefined>();
-  const ws = useRef<WebSocket>(
-    new WebSocket(
-      "wss://ursacoding.com/notebook/user/jerry/terminals/websocket/1?token=55eff85b5bff46d98ecff36ee69d62fe"
-    )
-  );
+  const terminal = useRef<Terminal | undefined>(new Terminal());
+  const fitAddOn = useRef<FitAddon>(new FitAddon())
+  const ws = useRef<WebSocket | undefined>();
 
   useEffect(() => {
-    terminal.current = new Terminal();
-    terminal.current.open(document.getElementById("terminal"));
+    const terminalId = 1 // TODO: load actual terminal session ID
+    ws.current = new WebSocket(
+      `wss://ursacoding.com/notebook/user/jerry/terminals/websocket/${terminalId}?token=55eff85b5bff46d98ecff36ee69d62fe`
+    )
 
+    terminal.current.loadAddon(fitAddOn.current);
+    terminal.current.open(document.getElementById("terminal"));
+    fitAddOn.current.fit();
+    
     ws.current.onopen = (e: Event) => console.log("socket opened", e);
-    ws.current.onmessage = (msgEvent) => {
-      const data = JSON.parse(msgEvent.data);
-      if (data[0] === "stdout") {
-        console.log(data[1]);
-        terminal.current.write(data[1]);
+    ws.current.onclose = e => console.warn('socket closed', e);
+
+    ws.current.addEventListener("message", e => {
+      const [type, content] = JSON.parse(e.data);
+      if (type === "stdout") {
+        terminal.current.write(content);
+        terminal.current.refresh(0, terminal.current.rows)
       }
-    };
+    })
 
     terminal.current.onData((arg1) => {
-      console.log("received", arg1);
-      ws.current.send(arg1);
+      if (ws.current.readyState === ws.current.CLOSED) {
+        console.warn("socket closed")
+      } else {
+        ws.current.send(JSON.stringify(["stdin", arg1]));
+      }
     });
   });
 
@@ -64,6 +73,7 @@ export default function Room(props: Props) {
             gutterSize={6}
             sizes={[75, 25]}
             snapOffset={0}
+            onDrag={sizes => fitAddOn.current.fit()}
           >
             {/* <Split className="split" direction="horizontal" sizes={[50, 50]}>
                       
@@ -81,7 +91,7 @@ export default function Room(props: Props) {
               </Split>
             </div>
             <Box position="relative">
-              <div id="terminal" className="full-screen" />
+              <div id="terminal" className="full-screen" style={{overflowY: "auto"}} />
             </Box>
           </Split>
         </div>
