@@ -1,7 +1,7 @@
 /* eslint-disable perfectionist/sort-imports */
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
+import "src/global.css";
 
 import ThemeProvider from 'src/theme';
 import { primaryFont } from 'src/theme/typography';

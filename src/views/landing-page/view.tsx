@@ -21,7 +21,7 @@ export default function LandingPage() {
     <Box sx={{ display: "flex", flexDirection: "column", height: 1 }}>
       <Box component="main" style={{ backgroundColor: "#7070e0", flexGrow: 1 }}>
         <Dialog open={true} maxWidth="sm" fullWidth>
-          <DialogTitle>Welcome to Peer Program</DialogTitle>
+          <DialogTitle>Welcome to Pear Program</DialogTitle>
           <DialogContent sx={{overflow: "visible"}}>
             <TextField label="Email address" type="email" fullWidth />
             <FormControl>
