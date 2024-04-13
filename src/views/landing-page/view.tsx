@@ -18,32 +18,38 @@ export default function LandingPage() {
   const agree = useBoolean(false);
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: 1 }}>
-      <Box component="main" style={{ backgroundColor: "#7070e0", flexGrow: 1 }}>
-        <Dialog open={true} maxWidth="sm" fullWidth>
-          <DialogTitle>Welcome to Pear Program</DialogTitle>
-          <DialogContent sx={{overflow: "visible"}}>
-            <TextField label="Email address" type="email" fullWidth />
-            <FormControl>
-              <FormControlLabel
-                label="I understand that PeerProgram is a research project by Stanford University"
-                sx={{ color: "#606060", mt: 2 }}
-                control={
-                  <Checkbox
-                    checked={agree.value}
-                    onChange={(e) => agree.setValue(e.target.checked)}
-                  />
-                }
-              />
-            </FormControl>
-          </DialogContent>
-          <DialogActions>
-            <Button color="primary" variant="contained" sx={{width: 100}}>
-              Enter
-            </Button>
-          </DialogActions>
-        </Dialog>
+    <>
+      <h1 className="text-3xl font-bold underline">This is a Landing page.</h1>
+      <Box sx={{ display: "flex", flexDirection: "column", height: 1 }}>
+        <Box
+          component="main"
+          style={{ backgroundColor: "#7070e0", flexGrow: 1 }}
+        >
+          <Dialog open={true} maxWidth="sm" fullWidth>
+            <DialogTitle>Welcome to Pear Program</DialogTitle>
+            <DialogContent sx={{ overflow: "visible" }}>
+              <TextField label="Email address" type="email" fullWidth />
+              <FormControl>
+                <FormControlLabel
+                  label="I understand that PeerProgram is a research project by Stanford University"
+                  sx={{ color: "#606060", mt: 2 }}
+                  control={
+                    <Checkbox
+                      checked={agree.value}
+                      onChange={(e) => agree.setValue(e.target.checked)}
+                    />
+                  }
+                />
+              </FormControl>
+            </DialogContent>
+            <DialogActions>
+              <Button color="primary" variant="contained" sx={{ width: 100 }}>
+                Enter
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </Box>
       </Box>
-    </Box>
+    </>
   );
 }
