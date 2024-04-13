@@ -44,7 +44,14 @@
 
 .main-split {
     display: flex;
+    flex-direction: row;
+    align-items: stretch;
+}
+
+.right-split {
+    display: flex;
     flex-direction: column;
+    height: 100%;
 }
 
 .code-split {
