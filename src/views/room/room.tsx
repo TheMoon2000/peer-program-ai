@@ -3,6 +3,7 @@
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Split from "react-split";
+import axios from "axios"
 import { Terminal as JTerminal } from "@jupyterlab/terminal";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
@@ -14,13 +15,15 @@ interface Props {
   roomId: string;
 }
 
+const axiosInstance = axios.create({ baseURL: "https://ursacoding.com/notebook/user/jerry", headers: { "Authorization": "token 55eff85b5bff46d98ecff36ee69d62fe" } })
+
 export default function Room(props: Props) {
-  const terminal = useRef<Terminal | undefined>(new Terminal());
+  const terminal = useRef<Terminal | undefined>(new Terminal({ cursorBlink: true }));
   const fitAddOn = useRef<FitAddon>(new FitAddon())
   const ws = useRef<WebSocket | undefined>();
 
   useEffect(() => {
-    const terminalId = 1 // TODO: load actual terminal session ID
+    const terminalId = 1 // TODO: load actual terminal session ID      
     ws.current = new WebSocket(
       `wss://ursacoding.com/notebook/user/jerry/terminals/websocket/${terminalId}?token=55eff85b5bff46d98ecff36ee69d62fe`
     )
@@ -47,6 +50,10 @@ export default function Room(props: Props) {
         ws.current.send(JSON.stringify(["stdin", arg1]));
       }
     });
+
+    window.addEventListener("unload", () => {
+      ws.current.close()
+    })
   });
 
   return (
