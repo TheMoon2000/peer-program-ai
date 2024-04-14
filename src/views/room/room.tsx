@@ -10,6 +10,13 @@ import { FitAddon } from "@xterm/addon-fit";
 import { useCallback, useEffect, useRef } from "react";
 import "@xterm/xterm/css/xterm.css";
 import MarkdownTextView from "@/components/MarkdownTextView/MarkdownTextView";
+import { useParams } from "next/navigation";
+import { ursaTheme } from "@/functionality/Constants";
+import Rustpad, { UserInfo } from "src/rustpad";
+import Chat from "@/components/chat/chat";
+// Required for rustpad to work
+import init, { set_panic_hook } from "rustpad-wasm";
+
 
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api'
 import { CompletionItemKind, CompletionItem as VCompletionItem, Diagnostic as VDiagnostic, WorkspaceFolder } from "vscode-languageclient"
@@ -18,10 +25,6 @@ import { toSocket, WebSocketMessageReader, WebSocketMessageWriter } from 'vscode
 import { CloseAction, ErrorAction, MessageTransports, integer } from 'vscode-languageclient';
 import "monaco-editor"
 import { language as pylanguage, conf as pyconf } from 'monaco-editor/esm/vs/basic-languages/python/python.js'
-import { useParams } from "next/navigation";
-import { ursaTheme } from "@/functionality/Constants";
-import Rustpad, { UserInfo } from "src/rustpad";
-import Chat from "@/components/chat/chat";
 
 
 interface Props {
@@ -56,6 +59,7 @@ export default function Room(props: Props) {
 
   // Setup monaco editor
   useEffect(() => {
+    init().then(() => set_panic_hook())
     monaco.languages.register({
       id: 'json',
       extensions: ['.json', '.jsonc'],
