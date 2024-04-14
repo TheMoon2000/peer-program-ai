@@ -206,8 +206,8 @@ export default function Room(props: Props) {
     });
 
     setInterval(() => {
-      axiosInstance.post(`/update-code/${server_id}`, editor.current.getModel().getValue()).then(r => {
-        console.log(r)
+      axiosInstance.post(`/update-code/${server_id}`, {
+        file: editor.current.getModel().getValue()
       })
     }, 3000)
 
