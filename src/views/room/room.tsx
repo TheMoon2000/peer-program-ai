@@ -77,9 +77,9 @@ export default function Room(props: Props) {
   const ws = useRef<WebSocket | undefined>();
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | undefined>();
   const rustpad = useRef<Rustpad>();
-  const showNameDialog = useBoolean(false) // TODO
-  const [username, setUsername] = useState("")
-  const isUsernameLoading = useBoolean(false)
+  const showNameDialog = useBoolean(false); // TODO
+  const [username, setUsername] = useState("");
+  const isUsernameLoading = useBoolean(false);
 
   // Insertion point color
   const [hue, setHue] = useStorage("hue", { defaultValue: generateHue });
@@ -111,7 +111,7 @@ export default function Room(props: Props) {
 
   // Setup monaco editor
   useEffect(() => {
-    init().then(() => set_panic_hook())
+    init().then(() => set_panic_hook());
     monaco.languages.register({
       id: "json",
       extensions: [".json", ".jsonc"],
@@ -133,7 +133,6 @@ export default function Room(props: Props) {
     editor.current = monaco.editor.create(
       document.querySelector("#code-editor")!,
       {
-
         minimap: {
           enabled: false, // This disables the minimap
         },
@@ -148,7 +147,7 @@ export default function Room(props: Props) {
         padding: { top: 5 },
         theme: "ursa",
         fontFamily: "Menlo, Consolas, monospace",
-        automaticLayout: true
+        automaticLayout: true,
       }
     );
 
@@ -159,22 +158,21 @@ export default function Room(props: Props) {
     };
 
     // TODO: fetch the terminal info from backend
-    const userId = localStorage.getItem("userId")
+    const userId = localStorage.getItem("userId");
     Promise.all([
       getRoomById(room_id as string),
       getUserIdsFromRoomId(room_id as string),
       getSelf(userId),
-      init()
-    ])
-    .then(([room, users, currentUser]) => {
+      init(),
+    ]).then(([room, users, currentUser]) => {
       console.log({ token: room[0].token, id: room[0].terminalId });
-      console.log("current users", users)
+      console.log("current users", users);
       if (!currentUser?.userName) {
-        showNameDialog.setValue(true)
+        showNameDialog.setValue(true);
       } else {
-        setUsername(currentUser.userName)
+        setUsername(currentUser.userName);
       }
-      terminal.current = new Terminal({ cursorBlink: true })
+      terminal.current = new Terminal({ cursorBlink: true });
       terminalInfo.current = { token: room[0].token, id: room[0].terminalId };
       initiateTerminalSession();
       terminal.current.loadAddon(fitAddOn.current);
@@ -193,13 +191,13 @@ export default function Room(props: Props) {
       });
 
       // Rustpad init
-      set_panic_hook()
+      set_panic_hook();
       rustpad.current = new Rustpad({
         uri: `wss://ursacoding.com/rustpad/api/socket/${room_id}`,
         editor: editor.current,
         onConnected: () => {
-          console.log("rustpad connected!", username, hue)
-          rustpad.current?.setInfo({name: username, hue: hue })
+          console.log("rustpad connected!", username, hue);
+          rustpad.current?.setInfo({ name: username, hue: hue });
         },
         onDisconnected: () => console.warn("rustpad disconnected :("),
         onChangeUsers: (users) => console.warn("users changed", users),
@@ -220,44 +218,46 @@ export default function Room(props: Props) {
     // })
   }, []);
 
-  return <>
-    <Stack className="full-screen">
-      {/* Navigation bar */}
-      <Stack
-        height="4rem"
-        sx={{ backgroundColor: "#dbe0f5" }}
-        direction="row"
-        justifyContent="center"
-        alignItems="center"
-        flexShrink={0}
-      >
-        Peer Program
-      </Stack>
-      <Split
-        className="main-split"
-        direction="horizontal"
-        sizes={[32, 68]}
-        gutterSize={6}
-        style={{ flexGrow: 1 }}
-      >
-        <Chat
-          editor={editor.current}
-          usersOnline={[{ name: "Jerry" }, { name: "Chinat" }]}
-        />
+  return (
+    <>
+      <Stack className="full-screen">
+        {/* Navigation bar */}
+        <Stack
+          height="4rem"
+          sx={{ backgroundColor: "#dbe0f5" }}
+          direction="row"
+          justifyContent="center"
+          alignItems="center"
+          flexShrink={0}
+        >
+          Peer Program
+        </Stack>
+        <Split
+          className="main-split"
+          direction="horizontal"
+          sizes={[32, 68]}
+          gutterSize={6}
+          style={{ flexGrow: 1 }}
+        >
+          <Chat
+            editor={editor.current}
+            usersOnline={[{ name: "Jerry" }, { name: "Chinat" }]}
+            userName={username}
+          />
 
-        <div>
-          <Split
-            className="right-split"
-            direction="vertical"
-            gutterSize={6}
-            sizes={[75, 25]}
-            snapOffset={0}
-            onDrag={(sizes) => {
-              fitAddOn.current.fit();
-              editor.current?.layout();
-            }}
-          >
-            {/* <Split className="split" direction="horizontal" sizes={[50, 50]}>
+          <div>
+            <Split
+              className="right-split"
+              direction="vertical"
+              gutterSize={6}
+              sizes={[75, 25]}
+              snapOffset={0}
+              onDrag={(sizes) => {
+                fitAddOn.current.fit();
+                editor.current?.layout();
+              }}
+            >
+              {/* <Split className="split" direction="horizontal" sizes={[50, 50]}>
                       
                   </Split> */}
             <div>
@@ -287,30 +287,44 @@ export default function Room(props: Props) {
       </Split>
     </Stack>
 
-    <Dialog open={showNameDialog.value} fullWidth maxWidth="sm">
-      <DialogTitle>Looks like it's your first time here</DialogTitle>
-      <DialogContent>
-        <Box mb={2} mt={-0.25}>
-          Let's get your name.
-        </Box>
-        <TextField placeholder="Name" fullWidth value={username} onChange={e => setUsername(e.target.value)} />
-      </DialogContent>
-      <DialogActions>
-        <LoadingButton disabled={!username} loading={isUsernameLoading.value} variant="contained" color="primary" onClick={async () => {
-          isUsernameLoading.setValue(true)
-          const userId = localStorage.getItem("userId")
-          if (!userId) {
-            window.location.assign("/") 
-          }
-          const response = await updateName(userId, username)
-          if (response === undefined) {
-            window.location.assign("/")
-          } else {
-            showNameDialog.setValue(false)
-            isUsernameLoading.setValue(false)
-          }
-        }}>Join Room</LoadingButton>
-      </DialogActions>
-    </Dialog>
-  </>
+      <Dialog open={showNameDialog.value} fullWidth maxWidth="sm">
+        <DialogTitle>Looks like it is your first time here</DialogTitle>
+        <DialogContent>
+          <Box mb={2} mt={-0.25}>
+            What is your name?
+          </Box>
+          <TextField
+            placeholder="Name"
+            fullWidth
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <LoadingButton
+            disabled={!username}
+            loading={isUsernameLoading.value}
+            variant="contained"
+            color="primary"
+            onClick={async () => {
+              isUsernameLoading.setValue(true);
+              const userId = localStorage.getItem("userId");
+              if (!userId) {
+                window.location.assign("/");
+              }
+              const response = await updateName(userId, username);
+              if (response === undefined) {
+                window.location.assign("/");
+              } else {
+                showNameDialog.setValue(false);
+                isUsernameLoading.setValue(false);
+              }
+            }}
+          >
+            Join Room
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
 }
