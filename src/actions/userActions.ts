@@ -41,8 +41,13 @@ export const updateUser = async (
   return user;
 };
 
-export const updateName = async (userId: string, name: string) => {
+export const updateName = async (name: string) => {
   // const userId = uuid();
+  const userId = localStorage.getItem("userId")
+  if (!userId) {
+    return undefined
+  }
+
   const user = await db
     .update(users)
     .set({ userName: name })
