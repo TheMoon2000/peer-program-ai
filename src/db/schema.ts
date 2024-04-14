@@ -36,7 +36,8 @@ export const rooms = pgTable("rooms", {
 export const users = pgTable("users", {
   userId: uuid("user_id").primaryKey(),
   // userId: text("user_id").primaryKey(),
-  userEmail: text("user_email").notNull().default("User"),
+  userEmail: text("user_email").notNull().unique(),
+  userName: text("user_name").notNull().default("User"),
   // roomId: uuid("room_id")
   //   .notNull()
   //   .references(() => rooms.id), // Foreign key linking to Rooms

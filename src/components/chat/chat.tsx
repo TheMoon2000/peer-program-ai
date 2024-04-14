@@ -11,55 +11,61 @@ interface Props {
 
 import { useChat } from "ai/react";
 import MarkdownTextView from "../MarkdownTextView/MarkdownTextView";
+import { DEFAULTQ } from "./constants";
 
-export default function Chat() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat();
+export default function Chat(props: Props) {
+  // TODO: Need to add real time library of current text?
+  const { messages, input, handleInputChange, handleSubmit } = useChat({
+    initialInput: `The learner is approaching the question ${DEFAULTQ}`,
+  });
   // TOOD: ask user for name when first enter into the screen?
   const name = "Chinat";
   // TODO: Need to figure out how to get time from the server?
+
+  // NEED TO GET VALUE
+  const currentText = props.editor?.getValue();
+
+  //   current?.getValue();
+  console.log(currentText);
+
   return (
     <>
-      <div className="flex flex-col w-full max-w-md mx-auto stretch space-y-4 max-h-screen">
+      <div className="flex flex-col w-full max-w-md mx-auto stretch space-y-4 max-h-screen overflow-scroll">
         {/* Todo: Load in a live question */}
         <div className="my-2">
-          <MarkdownTextView
-            rawText={`Write a Python function named \`add_numbers\` that takes two numbers as arguments and returns their sum. \n\n
-            ### Example \n\n
-\`\`\`python
-        print(add_numbers(10, 5))
-\`\`\` \n\n
-        Expected Output: 15
-        `}
-          ></MarkdownTextView>
+          <>{currentText}</>
+          <MarkdownTextView rawText={DEFAULTQ}></MarkdownTextView>
         </div>
-        {messages.map((m) => (
-          <div key={m.id} className="flex items-start gap-2.5">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-500">
-              <span className="text-sm font-medium leading-none text-white">
-                {m.role === "user" ? name.slice(0, 2).toUpperCase() : "AI"}
+        <div className="mb-12">
+          {messages.map((m) => (
+            <div key={m.id} className="flex items-start gap-2.5">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-500">
+                <span className="text-sm font-medium leading-none text-white">
+                  {m.role === "user" ? name.slice(0, 2).toUpperCase() : "AI"}
+                </span>
               </span>
-            </span>
 
-            <div className="flex flex-col gap-1 w-full">
-              {/* <div className="flex flex-col gap-1 w-full max-w-[320px]"> */}
-              <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {m.role === "user" ? "User: " : "AI: "}
-                </span>
-                <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-                  11:46
-                </span>
+              <div className="flex flex-col gap-1 w-full">
+                {/* <div className="flex flex-col gap-1 w-full max-w-[320px]"> */}
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {m.role === "user" ? "User: " : "AI: "}
+                  </span>
+                  {/* <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+                    11:46
+                  </span> */}
+                </div>
+                <div className="flex flex-col leading-1.5 p-4 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700">
+                  <p className="text-sm font-normal text-gray-900 dark:text-white">
+                    {" "}
+                    {m.content}
+                  </p>
+                </div>
+                {/* <span class="text-sm font-normal text-gray-500 dark:text-gray-400">Delivered</span> */}
               </div>
-              <div className="flex flex-col leading-1.5 p-4 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700">
-                <p className="text-sm font-normal text-gray-900 dark:text-white">
-                  {" "}
-                  {m.content}
-                </p>
-              </div>
-              {/* <span class="text-sm font-normal text-gray-500 dark:text-gray-400">Delivered</span> */}
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
 
         <form onSubmit={handleSubmit}>
           <input
