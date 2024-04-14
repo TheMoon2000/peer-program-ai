@@ -13,9 +13,10 @@ export const getData = async () => {
   return data;
 };
 
-export const getSelf = () => {
-  const data = localStorage.getItem("userId");
-  return data;
+export const getSelf = async (userId: string) => {
+  if (!userId) { return undefined }
+  const data = await db.select().from(users).where(eq(users.userId, userId))
+  return data?.[0];
 };
 
 export const addUser = async (email: string) => {

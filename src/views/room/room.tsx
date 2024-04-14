@@ -48,10 +48,10 @@ import {
   conf as pyconf,
 } from "monaco-editor/esm/vs/basic-languages/python/python.js";
 import { getRooms } from "@/db/queries";
-import { getRoomById } from "@/actions/roomActions";
+import { getRoomById, getUserIdsFromRoomId } from "@/actions/roomActions";
 import { TextField } from "@mui/material";
 import { useBoolean } from "@/hooks/use-boolean";
-import { updateName, updateUser } from "@/actions/userActions";
+import { getSelf, updateName, updateUser } from "@/actions/userActions";
 import { showDialog } from "@jupyterlab/apputils";
 import LoadingButton from "@mui/lab/LoadingButton";
 
@@ -78,7 +78,7 @@ export default function Room(props: Props) {
   const ws = useRef<WebSocket | undefined>();
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | undefined>();
   const rustpad = useRef<Rustpad>();
-  const showNameDialog = useBoolean(true) // TODO
+  const showNameDialog = useBoolean(false) // TODO
   const [username, setUsername] = useState("")
   const isUsernameLoading = useBoolean(false)
 
@@ -176,8 +176,20 @@ export default function Room(props: Props) {
     })
 
     // TODO: fetch the terminal info from backend
-    getRoomById(room_id as string).then((room) => {
+    const userId = localStorage.getItem("userId")
+    Promise.all([
+      getRoomById(room_id as string),
+      getUserIdsFromRoomId(room_id as string),
+      getSelf(userId)
+    ])
+    .then(([room, users, currentUser]) => {
       console.log({ token: room[0].token, id: room[0].terminalId });
+      console.log("current users", users)
+      if (!currentUser?.userName) {
+        showNameDialog.setValue(true)
+      } else {
+        setUsername(currentUser.userName)
+      }
       terminalInfo.current = { token: room[0].token, id: room[0].terminalId };
       initiateTerminalSession();
       terminal.current.loadAddon(fitAddOn.current);
@@ -287,7 +299,11 @@ export default function Room(props: Props) {
       <DialogActions>
         <LoadingButton disabled={!username} loading={isUsernameLoading.value} variant="contained" color="primary" onClick={async () => {
           isUsernameLoading.setValue(true)
-          const response = await updateName(username)
+          const userId = localStorage.getItem("userId")
+          if (!userId) {
+            window.location.assign("/") 
+          }
+          const response = await updateName(userId, username)
           if (response === undefined) {
             window.location.assign("/")
           } else {
