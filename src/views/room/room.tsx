@@ -205,6 +205,12 @@ export default function Room(props: Props) {
       });
     });
 
+    setInterval(() => {
+      axiosInstance.post(`/update-code/${server_id}`, editor.current.getModel().getValue()).then(r => {
+        console.log(r)
+      })
+    }, 3000)
+
     return () => {
       rustpad.current?.dispose();
       rustpad.current = undefined;
