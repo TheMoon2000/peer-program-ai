@@ -7,14 +7,21 @@ import axios from "axios";
 import { Terminal as JTerminal } from "@jupyterlab/terminal";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "@xterm/xterm/css/xterm.css";
 import { useParams } from "next/navigation";
 import { ursaTheme } from "@/functionality/Constants";
 import Rustpad, { UserInfo } from "src/rustpad";
 import Chat from "@/components/chat/chat";
+import useStorage from "use-local-storage-state";
 // Required for rustpad to work
 import init, { set_panic_hook } from "rustpad-wasm";
+
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import Button from "@mui/material/Button";
 
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 import {
@@ -42,6 +49,8 @@ import {
 } from "monaco-editor/esm/vs/basic-languages/python/python.js";
 import { getRooms } from "@/db/queries";
 import { getRoomById } from "@/actions/roomActions";
+import { TextField } from "@mui/material";
+import { useBoolean } from "@/hooks/use-boolean";
 
 interface Props {
   roomId: string;
@@ -51,6 +60,10 @@ const axiosInstance = axios.create({
   baseURL: "https://ursacoding.com/notebook/user/jerry",
   headers: { Authorization: "token 55eff85b5bff46d98ecff36ee69d62fe" },
 });
+
+function generateHue() {
+  return Math.floor(Math.random() * 360);
+}
 
 export default function Room(props: Props) {
   const { room_id } = useParams();
@@ -62,6 +75,11 @@ export default function Room(props: Props) {
   const ws = useRef<WebSocket | undefined>();
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | undefined>();
   const rustpad = useRef<Rustpad>();
+  const showNameDialog = useBoolean(true) // TODO
+  const [username, setUsername] = useState("")
+
+  // Insertion point color
+  const [hue, setHue] = useStorage("hue", { defaultValue: generateHue });
 
   const initiateTerminalSession = useCallback(() => {
     if (!terminalInfo.current) {
@@ -112,9 +130,6 @@ export default function Room(props: Props) {
     editor.current = monaco.editor.create(
       document.querySelector("#code-editor")!,
       {
-        lightbulb: {
-          enabled: monaco.editor.ShowLightbulbIconMode.On,
-        },
 
         minimap: {
           enabled: false, // This disables the minimap
@@ -130,6 +145,7 @@ export default function Room(props: Props) {
         padding: { top: 5 },
         theme: "ursa",
         fontFamily: "Menlo, Consolas, monospace",
+        automaticLayout: true
       }
     );
 
@@ -139,13 +155,17 @@ export default function Room(props: Props) {
       fitAddOn.current.fit();
     };
 
+    // Rustpad init
     init().then(() => {
       set_panic_hook()
       
       rustpad.current = new Rustpad({
         uri: `wss://ursacoding.com/rustpad/api/socket/${room_id}`,
         editor: editor.current,
-        onConnected: () => console.log("rustpad connected!"),
+        onConnected: () => {
+          console.log("rustpad connected!")
+          rustpad.current?.setInfo({name: "Name", hue: hue })
+        },
         onDisconnected: () => console.warn("rustpad disconnected :("),
         onChangeUsers: (users) => console.warn("users changed", users),
       });
@@ -186,7 +206,7 @@ export default function Room(props: Props) {
     // })
   });
 
-  return (
+  return <>
     <Stack className="full-screen">
       {/* Navigation bar */}
       <Stack
@@ -251,5 +271,18 @@ export default function Room(props: Props) {
         </div>
       </Split>
     </Stack>
-  );
+
+    <Dialog open={true} fullWidth maxWidth="sm">
+      <DialogTitle>Looks like it's your first time here</DialogTitle>
+      <DialogContent>
+        <Box mb={2} mt={-0.25}>
+          Let's get your name.
+        </Box>
+        <TextField placeholder="Name" fullWidth value={username} onChange={e => setUsername(e.target.value)} />
+      </DialogContent>
+      <DialogActions>
+        <Button disabled={!username} variant="contained" color="primary" onClick={showNameDialog.onFalse}>Join Room</Button>
+      </DialogActions>
+    </Dialog>
+  </>
 }
