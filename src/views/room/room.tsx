@@ -20,6 +20,8 @@ import "monaco-editor"
 import { language as pylanguage, conf as pyconf } from 'monaco-editor/esm/vs/basic-languages/python/python.js'
 import { useParams } from "next/navigation";
 import { ursaTheme } from "@/functionality/Constants";
+import Rustpad, { UserInfo } from "src/rustpad";
+import Chat from "@/components/chat/chat";
 
 
 interface Props {
@@ -34,7 +36,8 @@ export default function Room(props: Props) {
   const terminal = useRef<Terminal | undefined>(new Terminal({ cursorBlink: true }));
   const fitAddOn = useRef<FitAddon>(new FitAddon())
   const ws = useRef<WebSocket | undefined>();
-  const editor = useRef<any>()
+  const editor = useRef<monaco.editor.IStandaloneCodeEditor | undefined>()
+  const rustpad = useRef<Rustpad>()
 
   const initiateTerminalSession = useCallback(() => {
     if (!terminalInfo.current) { console.warn("Cannot initiate terminal session because info is not provided") }
@@ -95,7 +98,7 @@ export default function Room(props: Props) {
     monaco.editor.getModels().forEach(m => m.dispose())
     monaco.editor.defineTheme("ursa", ursaTheme)
 
-    monaco.editor.create(document.querySelector("#code-editor")!, {
+    editor.current = monaco.editor.create(document.querySelector("#code-editor")!, {
       lightbulb: {
         enabled: monaco.editor.ShowLightbulbIconMode.On
       },
@@ -122,6 +125,21 @@ export default function Room(props: Props) {
       fitAddOn.current.fit()
     }
 
+    rustpad.current = new Rustpad({
+      uri: `wss://ursacoding.com/rustpad/api/socket/${room_id}`,
+      editor: editor.current,
+      onConnected: () => console.log("rustpad connected!"),
+      onDisconnected: () => console.warn("rustpad disconnected :("),
+      onChangeUsers: (users) => console.warn("users changed", users)
+    })
+
+    return () => {
+      rustpad.current?.dispose();
+      rustpad.current = undefined;
+    };
+    // editor.current.onDidChangeModelContent(e => {
+
+    // })
     // editor.current.onDidChangeModelContent(e => {
     //   const code = this.editorRef!.getModel()!.getValue()
     //   console.log(code)
@@ -129,6 +147,10 @@ export default function Room(props: Props) {
     // })
 
   })
+
+  if (!editor.current) {
+    return <></> // Replace with loading component
+  }
 
   return (
     <Stack className="full-screen">
@@ -143,9 +165,7 @@ export default function Room(props: Props) {
         Navigation bar
       </Stack>
       <Split className="main-split" direction="horizontal" sizes={[32, 68]} gutterSize={6} style={{flexGrow: 1}}>
-        <div>
-          <MarkdownTextView rawText={"Instructions come here.\n```python\ndef hello():\n    print('hello')\n```"} />
-        </div>
+        <Chat editor={editor.current} usersOnline={[{ name: "Jerry" }, { name: "Chinat" }]} />
 
         <div>
           <Split
@@ -154,7 +174,10 @@ export default function Room(props: Props) {
             gutterSize={6}
             sizes={[75, 25]}
             snapOffset={0}
-            onDrag={sizes => fitAddOn.current.fit()}
+            onDrag={sizes => {
+              fitAddOn.current.fit()
+              editor.current?.layout()
+            }}
           >
             {/* <Split className="split" direction="horizontal" sizes={[50, 50]}>
                       

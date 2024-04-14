@@ -1,5 +1,5 @@
 import { LLM_SERVER } from "../Constants";
-import { Message, CodeSnapshot, CodingExercise } from "../Data Structures";
+import { Message, CodeSnapshot, CodingExercise } from "../../Data Structures";
 import { BaseBot } from "./BaseBot";
 import { v4 } from 'uuid'
 

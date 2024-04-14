@@ -15,3 +15,7 @@ export interface CodeSnapshot {
     code: string
     timestamp: Date
 }
+
+export interface UserInfo {
+    name: string
+}

@@ -1,4 +1,4 @@
-import { CodeSnapshot, CodingExercise, Message } from "../Data Structures"
+import { CodeSnapshot, CodingExercise, Message } from "../../Data Structures"
 
 /** Superclass of all chatbots. */
 export class BaseBot {
