@@ -37,7 +37,7 @@ export default function Chat(props: Props) {
           <MarkdownTextView rawText={DEFAULTQ}></MarkdownTextView>
         </div>
         <div className="mb-12">
-          {messages.map((m) => (
+          {messages.slice(1).map((m) => (
             <div key={m.id} className="flex items-start gap-2.5">
               <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-500">
                 <span className="text-sm font-medium leading-none text-white">

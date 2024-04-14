@@ -14,7 +14,7 @@ import Checkbox from "@mui/material/Checkbox";
 import { useBoolean } from "src/hooks/use-boolean";
 import TextField from "@mui/material/TextField";
 import { addUser, addUserToRoom } from "@/actions/userActions";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { addRoom } from "@/actions/roomActions";
 import { Loader } from "lucide-react";
@@ -29,6 +29,9 @@ export default function LandingPage() {
   // const rooms = await getRooms();
   // const users = await getUsers();
 
+  useEffect(() => {
+    console.log(email, agree);
+  }, [email]);
   // Event handler for adding a new todo
   const handleAdd = async (e) => {
     console.log("button click");
