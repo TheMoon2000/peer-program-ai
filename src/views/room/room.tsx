@@ -51,6 +51,9 @@ import { getRooms } from "@/db/queries";
 import { getRoomById } from "@/actions/roomActions";
 import { TextField } from "@mui/material";
 import { useBoolean } from "@/hooks/use-boolean";
+import { updateName, updateUser } from "@/actions/userActions";
+import { showDialog } from "@jupyterlab/apputils";
+import LoadingButton from "@mui/lab/LoadingButton";
 
 interface Props {
   roomId: string;
@@ -77,6 +80,7 @@ export default function Room(props: Props) {
   const rustpad = useRef<Rustpad>();
   const showNameDialog = useBoolean(true) // TODO
   const [username, setUsername] = useState("")
+  const isUsernameLoading = useBoolean(false)
 
   // Insertion point color
   const [hue, setHue] = useStorage("hue", { defaultValue: generateHue });
@@ -164,7 +168,7 @@ export default function Room(props: Props) {
         editor: editor.current,
         onConnected: () => {
           console.log("rustpad connected!")
-          rustpad.current?.setInfo({name: "Name", hue: hue })
+          rustpad.current?.setInfo({name: username, hue: hue })
         },
         onDisconnected: () => console.warn("rustpad disconnected :("),
         onChangeUsers: (users) => console.warn("users changed", users),
@@ -204,7 +208,7 @@ export default function Room(props: Props) {
     //   console.log(code)
 
     // })
-  });
+  }, []);
 
   return <>
     <Stack className="full-screen">
@@ -272,7 +276,7 @@ export default function Room(props: Props) {
       </Split>
     </Stack>
 
-    <Dialog open={true} fullWidth maxWidth="sm">
+    <Dialog open={showNameDialog.value} fullWidth maxWidth="sm">
       <DialogTitle>Looks like it's your first time here</DialogTitle>
       <DialogContent>
         <Box mb={2} mt={-0.25}>
@@ -281,7 +285,16 @@ export default function Room(props: Props) {
         <TextField placeholder="Name" fullWidth value={username} onChange={e => setUsername(e.target.value)} />
       </DialogContent>
       <DialogActions>
-        <Button disabled={!username} variant="contained" color="primary" onClick={showNameDialog.onFalse}>Join Room</Button>
+        <LoadingButton disabled={!username} loading={isUsernameLoading.value} variant="contained" color="primary" onClick={async () => {
+          isUsernameLoading.setValue(true)
+          const response = await updateName(username)
+          if (response === undefined) {
+            window.location.assign("/")
+          } else {
+            showNameDialog.setValue(false)
+            isUsernameLoading.setValue(false)
+          }
+        }}>Join Room</LoadingButton>
       </DialogActions>
     </Dialog>
   </>
