@@ -7,33 +7,53 @@ import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 interface Props {
   editor?: monaco.editor.IStandaloneCodeEditor; // first load is empty
   usersOnline: UserInfo[];
+  userName: string;
 }
 
-import { useChat } from "ai/react";
+import { Message, useChat } from "ai/react";
 import MarkdownTextView from "../MarkdownTextView/MarkdownTextView";
 import { DEFAULTQ } from "./constants";
 
 export default function Chat(props: Props) {
   // TODO: Need to add real time library of current text?
-  const { messages, input, handleInputChange, handleSubmit } = useChat({
-    // initialInput: `The learner is approaching the question ${DEFAULTQ}`,
-    initialMessages: [
-      {
-        id: Date.now().toLocaleString(),
-        content: `The learner is approaching the question ${DEFAULTQ}`,
-        role: "system",
-      },
-    ],
-  });
-  // TOOD: ask user for name when first enter into the screen?
-  const name = "Chinat";
-  // TODO: Need to figure out how to get time from the server?
-
   // NEED TO GET VALUE
   const currentText = props.editor?.getValue();
 
+  const initialMessage = [
+    {
+      id: Date.now().toLocaleString(),
+      content: `You are a helpful code tutor. The learner is approaching the question ${DEFAULTQ}.\n The current editor includes ${currentText}`,
+      role: "system",
+    },
+    // {
+    //   id: Date.now().toLocaleString() + "1",
+    //   content: `The current editor includes ${currentText}`, // need to dynamically update and set it?
+    //   role: "system",
+    // },
+  ];
+
   //   current?.getValue();
   console.log(currentText);
+
+  const { messages, input, handleInputChange, handleSubmit, setMessages } =
+    useChat({
+      // initialInput: `The learner is approaching the question ${DEFAULTQ}`,
+      initialMessages: initialMessage as Message[],
+    });
+  const name = props.userName;
+  // TODO: Need to figure out how to get time from the server?
+  const customHandleSubmit = (e) => {
+    e.preventDefault(); // Prevent the form from submitting immediately
+
+    // Update the messages state
+    setMessages([
+      ...(initialMessage as Message[]),
+      ...messages.slice(1), // Include the rest of the messages unchanged
+    ]);
+
+    // Call the original handleSubmit if needed or custom submission logic
+    handleSubmit(e); // This will reset the input and possibly send the message to the server
+  };
 
   return (
     <>
@@ -42,10 +62,11 @@ export default function Chat(props: Props) {
         {/* Todo: Load in a live question */}
         <div className="mx-4">
           <div className="my-2">
-            <>{currentText}</>
+            {/* <>{currentText}</> */}
             <MarkdownTextView rawText={DEFAULTQ}></MarkdownTextView>
           </div>
           <div className="mb-16">
+            {/* {messages.map((m) => ( */}
             {messages.slice(1).map((m) => (
               <div key={m.id} className="flex items-start gap-2.5">
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-500">
@@ -67,7 +88,7 @@ export default function Chat(props: Props) {
                   <div className="flex flex-col leading-1.5 p-4 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700">
                     <p className="text-sm font-normal text-gray-900 dark:text-white">
                       {" "}
-                      {m.content}
+                      <MarkdownTextView rawText={m.content}></MarkdownTextView>
                     </p>
                   </div>
                   {/* <span class="text-sm font-normal text-gray-500 dark:text-gray-400">Delivered</span> */}
@@ -76,7 +97,7 @@ export default function Chat(props: Props) {
             ))}
             <div />
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={customHandleSubmit}>
               <input
                 className="fixed bottom-0 w-full max-w-md p-2 mb-8 border border-gray-300 rounded shadow-xl"
                 value={input}
