@@ -1,0 +1,17 @@
+{
+  "name": "rustpad-wasm",
+  "collaborators": [
+    "Eric Zhang <ekzhang1@gmail.com>"
+  ],
+  "version": "0.1.0",
+  "files": [
+    "rustpad_wasm_bg.wasm",
+    "rustpad_wasm.js",
+    "rustpad_wasm.d.ts"
+  ],
+  "module": "rustpad_wasm.js",
+  "types": "rustpad_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
