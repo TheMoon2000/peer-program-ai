@@ -24,10 +24,10 @@ export default function Hero() {
                   </a>
                 </div>
                 <h1 className="mt-10 text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-                  Supercharge your coding with Pear Programming
+                  Supercharge your coding with Peer Programming
                 </h1>
                 <p className="mt-6 text-lg leading-8 text-gray-600">
-                  PearProgram transforms coding education by enabling students
+                  PeerProgram transforms coding education by enabling students
                   to solve problems together in real time. Our platform offers
                   live pair programming, screen sharing, and integrated
                   communication tools.
