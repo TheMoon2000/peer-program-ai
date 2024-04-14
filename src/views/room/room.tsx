@@ -9,7 +9,12 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { useCallback, useEffect, useRef } from "react";
 import "@xterm/xterm/css/xterm.css";
-import MarkdownTextView from "@/components/MarkdownTextView/MarkdownTextView";
+import { useParams } from "next/navigation";
+import { ursaTheme } from "@/functionality/Constants";
+import Rustpad, { UserInfo } from "src/rustpad";
+import Chat from "@/components/chat/chat";
+// Required for rustpad to work
+import init, { set_panic_hook } from "rustpad-wasm";
 
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 import {
@@ -35,10 +40,6 @@ import {
   language as pylanguage,
   conf as pyconf,
 } from "monaco-editor/esm/vs/basic-languages/python/python.js";
-import { useParams } from "next/navigation";
-import { ursaTheme } from "@/functionality/Constants";
-import Rustpad, { UserInfo } from "src/rustpad";
-import Chat from "@/components/chat/chat";
 import { getRooms } from "@/db/queries";
 import { getRoomById } from "@/actions/roomActions";
 
@@ -89,6 +90,7 @@ export default function Room(props: Props) {
 
   // Setup monaco editor
   useEffect(() => {
+    init().then(() => set_panic_hook())
     monaco.languages.register({
       id: "json",
       extensions: [".json", ".jsonc"],
@@ -137,13 +139,17 @@ export default function Room(props: Props) {
       fitAddOn.current.fit();
     };
 
-    rustpad.current = new Rustpad({
-      uri: `wss://ursacoding.com/rustpad/api/socket/${room_id}`,
-      editor: editor.current,
-      onConnected: () => console.log("rustpad connected!"),
-      onDisconnected: () => console.warn("rustpad disconnected :("),
-      onChangeUsers: (users) => console.warn("users changed", users),
-    });
+    init().then(() => {
+      set_panic_hook()
+      
+      rustpad.current = new Rustpad({
+        uri: `wss://ursacoding.com/rustpad/api/socket/${room_id}`,
+        editor: editor.current,
+        onConnected: () => console.log("rustpad connected!"),
+        onDisconnected: () => console.warn("rustpad disconnected :("),
+        onChangeUsers: (users) => console.warn("users changed", users),
+      });
+    })
 
     // TODO: fetch the terminal info from backend
     getRoomById(room_id as string).then((room) => {
