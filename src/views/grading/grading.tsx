@@ -75,7 +75,7 @@ export default function Grading(props: Props) {
   const [inputValue, setInputValue] = useState("1,2,3");
   const [outputValue, setOutputValue] = useState("6");
   return (
-    <div className="m-2 w-full">
+    <div className="m-2 w-full overflow-y-auto">
       <div className="border-b border-gray-200 pb-5">
         <h3 className="text-base font-semibold leading-6 text-gray-900">
           Test Cases
