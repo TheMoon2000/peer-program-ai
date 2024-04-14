@@ -16,7 +16,7 @@ export const getRoomById = async (id: string) => {
   return data;
 };
 
-export const getUserIdFromRoomId = async (id: string) => {
+export const getUserIdsFromRoomId = async (id: string) => {
   const data = await db.select().from(roomUsers).where(eq(rooms.id, id));
   return data;
 };

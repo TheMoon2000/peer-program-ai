@@ -13,6 +13,11 @@ export const getData = async () => {
   return data;
 };
 
+export const getSelf = () => {
+  const data = localStorage.getItem("userId");
+  return data;
+};
+
 export const addUser = async (email: string) => {
   const userId = uuid();
   await db.insert(users).values({
