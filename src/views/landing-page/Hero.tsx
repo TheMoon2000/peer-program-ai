@@ -24,10 +24,10 @@ export default function Hero() {
                   </a>
                 </div>
                 <h1 className="mt-10 text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-                  Supercharge your coding with Pear Programming
+                  Supercharge your coding with Peer Programming
                 </h1>
                 <p className="mt-6 text-lg leading-8 text-gray-600">
-                  PearProgram transforms coding education by enabling students
+                  PeerProgram transforms coding education by enabling students
                   to solve problems together in real time. Our platform offers
                   live pair programming, screen sharing, and integrated
                   communication tools.
@@ -61,7 +61,7 @@ export default function Hero() {
               <div className="max-w-3xl flex-none sm:max-w-5xl lg:max-w-none">
                 <div className=" rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4">
                   <img
-                    src="https://tailwindui.com/img/component-images/project-app-screenshot.png"
+                    src="/peer_program_demo_background.png"
                     alt="App screenshot"
                     width={2432}
                     height={1442}

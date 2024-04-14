@@ -55,6 +55,7 @@ import { getSelf, updateName, updateUser } from "@/actions/userActions";
 import { showDialog } from "@jupyterlab/apputils";
 import LoadingButton from "@mui/lab/LoadingButton";
 import Grading from "../grading/grading";
+import Navbar from "@/components/navbar/navbar";
 
 interface Props {
   roomId: string;
@@ -222,7 +223,8 @@ export default function Room(props: Props) {
     <>
       <Stack className="full-screen">
         {/* Navigation bar */}
-        <Stack
+        <Navbar></Navbar>
+        {/* <Stack
           height="4rem"
           sx={{ backgroundColor: "#dbe0f5" }}
           direction="row"
@@ -231,7 +233,7 @@ export default function Room(props: Props) {
           flexShrink={0}
         >
           Peer Program
-        </Stack>
+        </Stack> */}
         <Split
           className="main-split"
           direction="horizontal"
@@ -260,32 +262,32 @@ export default function Room(props: Props) {
               {/* <Split className="split" direction="horizontal" sizes={[50, 50]}>
                       
                   </Split> */}
-            <div>
-              <Split
-                className="code-split"
-                sizes={[50, 50]}
-                direction="horizontal"
-                gutterSize={6}
-                snapOffset={0}
-                onDrag={(e) => {
-                  editor.current?.layout();
-                }}
-              >
-                <div id="code-editor"></div>
-                <Grading editor={editor.current} />
-              </Split>
-            </div>
-            <Box position="relative">
-              <div
-                id="terminal"
-                className="full-screen"
-                style={{ overflowY: "auto" }}
-              />
-            </Box>
-          </Split>
-        </div>
-      </Split>
-    </Stack>
+              <div>
+                <Split
+                  className="code-split"
+                  sizes={[50, 50]}
+                  direction="horizontal"
+                  gutterSize={6}
+                  snapOffset={0}
+                  onDrag={(e) => {
+                    editor.current?.layout();
+                  }}
+                >
+                  <div id="code-editor"></div>
+                  <Grading editor={editor.current} />
+                </Split>
+              </div>
+              <Box position="relative">
+                <div
+                  id="terminal"
+                  className="full-screen"
+                  style={{ overflowY: "auto" }}
+                />
+              </Box>
+            </Split>
+          </div>
+        </Split>
+      </Stack>
 
       <Dialog open={showNameDialog.value} fullWidth maxWidth="sm">
         <DialogTitle>Looks like it is your first time here</DialogTitle>
