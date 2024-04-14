@@ -3,9 +3,13 @@ import LandingPage from "src/views/landing-page/view";
 // ----------------------------------------------------------------------
 
 export const metadata = {
-  title: 'Welcome',
+  title: "Welcome",
 };
 
 export default function HomePage() {
-  return <LandingPage />;
+  return (
+    <>
+      <LandingPage />
+    </>
+  );
 }
