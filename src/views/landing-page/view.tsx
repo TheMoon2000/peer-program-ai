@@ -38,6 +38,8 @@ export default function LandingPage() {
     e.preventDefault();
     const newUser = await addUser(email);
     console.log("added email " + email);
+
+    localStorage.setItem("userId", newUser);
     setEmail("");
     setLoading(true);
     const room = await addUserToRoom(newUser);

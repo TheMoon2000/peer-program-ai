@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import db from "@/db/drizzle";
-import { rooms } from "@/db/schema";
+import { roomUsers, rooms } from "@/db/schema";
 import { v4 as uuid } from "uuid";
 import axios from "axios";
 
@@ -13,6 +13,11 @@ export const getData = async () => {
 };
 export const getRoomById = async (id: string) => {
   const data = await db.select().from(rooms).where(eq(rooms.id, id));
+  return data;
+};
+
+export const getUserIdFromRoomId = async (id: string) => {
+  const data = await db.select().from(roomUsers).where(eq(rooms.id, id));
   return data;
 };
 
