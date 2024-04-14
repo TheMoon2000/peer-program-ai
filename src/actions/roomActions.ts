@@ -11,6 +11,10 @@ export const getData = async () => {
   const data = await db.select().from(rooms);
   return data;
 };
+export const getRoomById = async (id: string) => {
+  const data = await db.select().from(rooms).where(eq(rooms.id, id));
+  return data;
+};
 
 export const addRoom = async (
   codeState: string,
