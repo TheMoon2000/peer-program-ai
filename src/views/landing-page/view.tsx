@@ -18,6 +18,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { addRoom } from "@/actions/roomActions";
 import { Loader } from "lucide-react";
+import Hero from "./Hero";
+import Features from "./Features";
 
 export default function LandingPage() {
   const agree = useBoolean(false);
@@ -49,6 +51,8 @@ export default function LandingPage() {
   }
   return (
     <>
+      <Hero></Hero>
+      <Features></Features>
       <div className="bg-white py-16 sm:py-24">
         <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="relative isolate overflow-hidden bg-gray-900 px-6 py-24 shadow-2xl sm:rounded-3xl sm:px-24 xl:py-32">
@@ -77,6 +81,7 @@ export default function LandingPage() {
                 />
                 <button
                   className="flex-none rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  disabled={!agree.value || email.length === 0}
                   onClick={(e) => handleAdd(e)}
                 >
                   Enter
@@ -90,6 +95,7 @@ export default function LandingPage() {
                     name="comments"
                     type="checkbox"
                     className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+                    onChange={(e) => agree.setValue(e.target.checked)}
                   />
                 </div>
                 <div className="ml-3 text-sm leading-6">
