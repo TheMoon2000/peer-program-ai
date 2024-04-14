@@ -14,17 +14,6 @@ export const getData = async () => {
 };
 
 export const addUser = async (email: string) => {
-  // TODO: Get a room, find an empty room, or create a new room?
-  // Look for a room that is not full
-
-  // If there is a full room
-
-  // add user to Room
-
-  // else create a new room for the user
-
-  // return room id
-
   const userId = uuid();
   await db.insert(users).values({
     userId: userId,
@@ -32,6 +21,23 @@ export const addUser = async (email: string) => {
     // roomId: "14d3a085-26d0-4bb6-bf9f-e5a90a2d77c4",
   });
   // revalidatePath("/");
+  return userId;
+};
+
+export const updateUser = async (
+  userId: string,
+  email: string,
+  name: string
+) => {
+  // const userId = uuid();
+  await db
+    .update(users)
+    .set({ userEmail: email, userName: name })
+    .where(eq(users.userId, userId));
+  // await db.update(users)
+  // .set({ name: 'Mr. Dan' })
+  // .where(eq(users.name, 'Dan'));
+
   return userId;
 };
 
