@@ -30,7 +30,7 @@ export const updateUser = async (
   name: string
 ) => {
   // const userId = uuid();
-  await db
+  const user = await db
     .update(users)
     .set({ userEmail: email, userName: name })
     .where(eq(users.userId, userId));
@@ -38,7 +38,20 @@ export const updateUser = async (
   // .set({ name: 'Mr. Dan' })
   // .where(eq(users.name, 'Dan'));
 
-  return userId;
+  return user;
+};
+
+export const updateName = async (userId: string, name: string) => {
+  // const userId = uuid();
+  const user = await db
+    .update(users)
+    .set({ userName: name })
+    .where(eq(users.userId, userId));
+  // await db.update(users)
+  // .set({ name: 'Mr. Dan' })
+  // .where(eq(users.name, 'Dan'));
+
+  return user;
 };
 
 export const addUserToRoom = async (userId: string) => {
