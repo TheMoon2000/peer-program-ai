@@ -34,7 +34,6 @@ export default function LandingPage() {
   }, [email]);
   // Event handler for adding a new todo
   const handleAdd = async (e) => {
-    console.log("button click");
     e.preventDefault();
     const newUser = await addUser(email);
     console.log("added email " + email);

@@ -71,9 +71,7 @@ function generateHue() {
 export default function Room(props: Props) {
   const { room_id } = useParams();
   const terminalInfo = useRef<{ token: string; id: number } | undefined>();
-  const terminal = useRef<Terminal | undefined>(
-    new Terminal({ cursorBlink: true })
-  );
+  const terminal = useRef<Terminal | undefined>();
   const fitAddOn = useRef<FitAddon>(new FitAddon());
   const ws = useRef<WebSocket | undefined>();
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | undefined>();
@@ -159,28 +157,13 @@ export default function Room(props: Props) {
       fitAddOn.current.fit();
     };
 
-    // Rustpad init
-    init().then(() => {
-      set_panic_hook()
-      
-      rustpad.current = new Rustpad({
-        uri: `wss://ursacoding.com/rustpad/api/socket/${room_id}`,
-        editor: editor.current,
-        onConnected: () => {
-          console.log("rustpad connected!")
-          rustpad.current?.setInfo({name: username, hue: hue })
-        },
-        onDisconnected: () => console.warn("rustpad disconnected :("),
-        onChangeUsers: (users) => console.warn("users changed", users),
-      });
-    })
-
     // TODO: fetch the terminal info from backend
     const userId = localStorage.getItem("userId")
     Promise.all([
       getRoomById(room_id as string),
       getUserIdsFromRoomId(room_id as string),
-      getSelf(userId)
+      getSelf(userId),
+      init()
     ])
     .then(([room, users, currentUser]) => {
       console.log({ token: room[0].token, id: room[0].terminalId });
@@ -190,6 +173,7 @@ export default function Room(props: Props) {
       } else {
         setUsername(currentUser.userName)
       }
+      terminal.current = new Terminal({ cursorBlink: true })
       terminalInfo.current = { token: room[0].token, id: room[0].terminalId };
       initiateTerminalSession();
       terminal.current.loadAddon(fitAddOn.current);
@@ -205,6 +189,19 @@ export default function Room(props: Props) {
         } else {
           ws.current.send(JSON.stringify(["stdin", arg1]));
         }
+      });
+
+      // Rustpad init
+      set_panic_hook()
+      rustpad.current = new Rustpad({
+        uri: `wss://ursacoding.com/rustpad/api/socket/${room_id}`,
+        editor: editor.current,
+        onConnected: () => {
+          console.log("rustpad connected!", username, hue)
+          rustpad.current?.setInfo({name: username, hue: hue })
+        },
+        onDisconnected: () => console.warn("rustpad disconnected :("),
+        onChangeUsers: (users) => console.warn("users changed", users),
       });
     });
 
@@ -232,7 +229,7 @@ export default function Room(props: Props) {
         justifyContent="center"
         alignItems="center"
       >
-        Navigation bar
+        Peer Program
       </Stack>
       <Split
         className="main-split"
