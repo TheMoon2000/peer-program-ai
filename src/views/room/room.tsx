@@ -61,8 +61,7 @@ interface Props {
 }
 
 const axiosInstance = axios.create({
-  baseURL: "https://ursacoding.com/notebook/user/jerry",
-  headers: { Authorization: "token 55eff85b5bff46d98ecff36ee69d62fe" },
+  baseURL: "https://ursacoding.com/peer",
 });
 
 function generateHue() {
@@ -71,6 +70,7 @@ function generateHue() {
 
 export default function Room(props: Props) {
   const { room_id } = useParams();
+  const server_id = (room_id as string).replace(/-/g, "")
   const terminalInfo = useRef<{ token: string; id: number } | undefined>();
   const terminal = useRef<Terminal | undefined>();
   const fitAddOn = useRef<FitAddon>(new FitAddon());
@@ -93,10 +93,7 @@ export default function Room(props: Props) {
     const { token, id: terminalId } = terminalInfo.current;
 
     ws.current = new WebSocket(
-      `wss://ursacoding.com/notebook/user/${(room_id as string).replace(
-        /-/g,
-        ""
-      )}/terminals/websocket/${terminalId}?token=${token}`
+      `wss://ursacoding.com/notebook/user/${server_id}/terminals/websocket/${terminalId}?token=${token}`
     );
     ws.current.onopen = (e) => console.log("socket opened", e);
     ws.current.onclose = (e) => console.warn("socket closed", e);
@@ -183,7 +180,10 @@ export default function Room(props: Props) {
         if (ws.current.readyState === ws.current.CLOSED) {
           console.warn("socket closed");
           if (confirm("Terminal session closed. Reopen?")) {
-            initiateTerminalSession();
+            axiosInstance.post(`/renew/${server_id}`).then((t) => {
+              console.log(t)
+              initiateTerminalSession();
+            })
           }
         } else {
           ws.current.send(JSON.stringify(["stdin", arg1]));
