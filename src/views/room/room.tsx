@@ -54,6 +54,7 @@ import { useBoolean } from "@/hooks/use-boolean";
 import { getSelf, updateName, updateUser } from "@/actions/userActions";
 import { showDialog } from "@jupyterlab/apputils";
 import LoadingButton from "@mui/lab/LoadingButton";
+import Grading from "../grading/grading";
 
 interface Props {
   roomId: string;
@@ -271,7 +272,7 @@ export default function Room(props: Props) {
                 }}
               >
                 <div id="code-editor"></div>
-                <div>right</div>
+                <Grading editor={editor.current} />
               </Split>
             </div>
             <Box position="relative">
