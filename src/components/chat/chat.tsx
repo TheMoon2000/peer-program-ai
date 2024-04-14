@@ -16,7 +16,14 @@ import { DEFAULTQ } from "./constants";
 export default function Chat(props: Props) {
   // TODO: Need to add real time library of current text?
   const { messages, input, handleInputChange, handleSubmit } = useChat({
-    initialInput: `The learner is approaching the question ${DEFAULTQ}`,
+    // initialInput: `The learner is approaching the question ${DEFAULTQ}`,
+    initialMessages: [
+      {
+        id: Date.now().toLocaleString(),
+        content: `The learner is approaching the question ${DEFAULTQ}`,
+        role: "system",
+      },
+    ],
   });
   // TOOD: ask user for name when first enter into the screen?
   const name = "Chinat";
@@ -33,12 +40,12 @@ export default function Chat(props: Props) {
       <div className="flex flex-col w-full mx-auto stretch space-y-4 max-h-screen overflow-scroll">
         {/* <div className="flex flex-col w-full max-w-md mx-auto stretch space-y-4 max-h-screen overflow-scroll"> */}
         {/* Todo: Load in a live question */}
-        <div className="mx-2">
+        <div className="mx-4">
           <div className="my-2">
             <>{currentText}</>
             <MarkdownTextView rawText={DEFAULTQ}></MarkdownTextView>
           </div>
-          <div className="mb-12">
+          <div className="mb-16">
             {messages.slice(1).map((m) => (
               <div key={m.id} className="flex items-start gap-2.5">
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-500">
