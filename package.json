@@ -25,6 +25,7 @@
     "@xterm/addon-attach": "^0.11.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",
+    "ai": "^3.0.22",
     "axios": "^1.6.8",
     "drizzle-orm": "^0.30.8",
     "lucide-react": "^0.368.0",
@@ -32,6 +33,7 @@
     "monaco-languageclient": "^8.3.0",
     "next": "14.2.0",
     "notistack": "^3.0.1",
+    "openai": "^4.33.1",
     "react": "^18",
     "react-dom": "^18",
     "react-lazy-load-image-component": "^1.6.0",
@@ -43,6 +45,7 @@
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.0",
     "remark-math": "^6.0.0",
+    "rustpad-wasm": "file:./rustpad-wasm/pkg",
     "simplebar-react": "^3.2.4",
     "slick-carousel": "^1.8.1",
     "stylis-plugin-rtl": "^2.1.1",
@@ -51,7 +54,7 @@
     "vscode-ws-jsonrpc": "^3.3.1",
     "ws": "^8.16.0",
     "yet-another-react-lightbox": "^3.17.2",
-    "rustpad-wasm": "file:./rustpad-wasm/pkg"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/lodash.debounce": "^4.0.9",
