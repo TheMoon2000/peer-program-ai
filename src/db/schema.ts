@@ -25,12 +25,24 @@ export const rooms = pgTable("rooms", {
   codeState: text("code_state").notNull(),
   question: text("question").notNull(),
   token: text("token").notNull(),
+  meetingId: text("meeting_id"),
   terminalId: integer("terminal_id").notNull(), // Unique terminal ID for each room
   full: boolean("full").notNull().default(false), // Indicates if the room is full
   created: timestamp("created").notNull(), // created time for the room
-  // roomId: uuid("room_id")
-  //   .notNull()
-  //   .references(() => rooms.id), // Foreign key linking to Rooms
+});
+
+export const chat = pgTable("chat", {
+  messageId: uuid("message_id").primaryKey(), // Unique identifier for each message
+  roomId: uuid("room_id")
+    .references(() => rooms.id, { onDelete: "cascade" })
+    .notNull(), // Foreign key linking to Rooms table
+  userId: uuid("user_id")
+    .references(() => users.userId, { onDelete: "cascade" })
+    .notNull(), // Foreign key linking to Users table
+  userInput: text("user_input").notNull(), // The content of the message
+  assistantResponse: text("assistant_response"), // The response from the assistant
+  assistantName: text("assistant_name"), // The name of the assistant
+  timeCreated: timestamp("time_created").notNull(), // Timestamp of when the message was created
 });
 
 // Define the Users table

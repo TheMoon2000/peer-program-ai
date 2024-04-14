@@ -53,6 +53,7 @@ export const addRoom = async (
     terminalId: response.data["terminal_id"],
     full: false,
     created: new Date(),
+    //TODO: need to get the meeting id as well?
   });
   return newRoomId;
 };
