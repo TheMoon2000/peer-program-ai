@@ -37,7 +37,7 @@ export default function Chat(props: Props) {
 
   return (
     <>
-      <div className="flex flex-col w-full mx-auto stretch space-y-4 max-h-screen overflow-scroll">
+      <div className="flex flex-col w-full mx-auto stretch space-y-4 max-h-[calc(100vh-4rem)] overflow-scroll">
         {/* <div className="flex flex-col w-full max-w-md mx-auto stretch space-y-4 max-h-screen overflow-scroll"> */}
         {/* Todo: Load in a live question */}
         <div className="mx-4">
