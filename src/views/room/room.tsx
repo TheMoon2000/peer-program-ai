@@ -223,11 +223,12 @@ export default function Room(props: Props) {
     <Stack className="full-screen">
       {/* Navigation bar */}
       <Stack
-        height={60}
+        height="4rem"
         sx={{ backgroundColor: "#dbe0f5" }}
         direction="row"
         justifyContent="center"
         alignItems="center"
+        flexShrink={0}
       >
         Peer Program
       </Stack>
