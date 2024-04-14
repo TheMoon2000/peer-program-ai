@@ -27,6 +27,7 @@ export const rooms = pgTable("rooms", {
   token: text("token").notNull(),
   terminalId: integer("terminal_id").notNull(), // Unique terminal ID for each room
   full: boolean("full").notNull().default(false), // Indicates if the room is full
+  created: timestamp("created").notNull(), // created time for the room
   // roomId: uuid("room_id")
   //   .notNull()
   //   .references(() => rooms.id), // Foreign key linking to Rooms

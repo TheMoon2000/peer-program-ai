@@ -35,16 +35,28 @@ export default function LandingPage() {
   // Event handler for adding a new todo
   const handleAdd = async (e) => {
     e.preventDefault();
+    // Check to see if user Exists already?
+
     const newUser = await addUser(email);
     console.log("added email " + email);
-
     localStorage.setItem("userId", newUser);
     setEmail("");
     setLoading(true);
-    const room = await addUserToRoom(newUser);
+    // if mobile
+    const userAgent = navigator.userAgent || navigator.vendor;
 
-    router.push(`/rooms/${room}`);
-    // setInput("");
+    if (
+      /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+        userAgent.toLowerCase()
+      )
+    ) {
+      // reroute to landing page
+      router.push(`/mobile`);
+    } else {
+      // else
+      const room = await addUserToRoom(newUser);
+      router.push(`/rooms/${room}`);
+    }
   };
   if (loading) {
     return (

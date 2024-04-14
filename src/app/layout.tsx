@@ -10,7 +10,7 @@ import { SettingsProvider } from "@/components/settings";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Pear Program",
+  title: "Peer Program",
   description: "AI-facilitated collaborative learning for computer science",
 };
 
