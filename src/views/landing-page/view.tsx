@@ -29,9 +29,6 @@ export default function LandingPage() {
   // const rooms = await getRooms();
   // const users = await getUsers();
 
-  useEffect(() => {
-    console.log(email, agree);
-  }, [email]);
   // Event handler for adding a new todo
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -39,6 +36,7 @@ export default function LandingPage() {
 
     const newUser = await addUser(email);
     console.log("added email " + email);
+
     localStorage.setItem("userId", newUser);
     setEmail("");
     setLoading(true);
@@ -98,6 +96,9 @@ export default function LandingPage() {
                 <button
                   className="flex-none rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                   disabled={!agree.value || email.length === 0}
+                  style={{
+                    opacity: !agree.value || email.length === 0 ? 0.5 : 1,
+                  }}
                   onClick={(e) => handleAdd(e)}
                 >
                   Enter

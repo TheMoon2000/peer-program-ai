@@ -20,14 +20,20 @@ export const getSelf = async (userId: string) => {
 };
 
 export const addUser = async (email: string) => {
-  const userId = uuid();
-  await db.insert(users).values({
-    userId: userId,
-    userEmail: email,
-    // roomId: "14d3a085-26d0-4bb6-bf9f-e5a90a2d77c4",
-  });
-  // revalidatePath("/");
-  return userId;
+  const existingEntry = await db.select().from(users).where(eq(users.userEmail, email))
+  if (existingEntry.length === 0) {
+    const userId = uuid();
+    await db.insert(users).values({
+      userId: userId,
+      userEmail: email,
+      // roomId: "14d3a085-26d0-4bb6-bf9f-e5a90a2d77c4",
+    }).onConflictDoNothing();
+    // revalidatePath("/");
+    return userId;
+  } else {
+    return existingEntry[0].userId
+  }
+
 };
 
 export const updateUser = async (
