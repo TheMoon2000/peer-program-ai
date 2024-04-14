@@ -71,7 +71,7 @@ function generateHue() {
 
 export default function Room(props: Props) {
   const { room_id } = useParams();
-  const server_id = (room_id as string).replace(/-/g, "")
+  const server_id = (room_id as string).replace(/-/g, "");
   const terminalInfo = useRef<{ token: string; id: number } | undefined>();
   const terminal = useRef<Terminal | undefined>();
   const fitAddOn = useRef<FitAddon>(new FitAddon());
@@ -182,9 +182,9 @@ export default function Room(props: Props) {
           console.warn("socket closed");
           if (confirm("Terminal session closed. Reopen?")) {
             axiosInstance.post(`/renew/${server_id}`).then((t) => {
-              console.log(t)
+              console.log(t);
               initiateTerminalSession();
-            })
+            });
           }
         } else {
           ws.current.send(JSON.stringify(["stdin", arg1]));
@@ -242,6 +242,8 @@ export default function Room(props: Props) {
           style={{ flexGrow: 1 }}
         >
           <Chat
+            roomId={room_id as string}
+            userId={localStorage.getItem("userId")!}
             editor={editor.current}
             usersOnline={[{ name: "Jerry" }, { name: "Chinat" }]}
             userName={username}
