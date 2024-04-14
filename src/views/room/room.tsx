@@ -54,30 +54,6 @@ export default function Room(props: Props) {
     })
   }, [terminalInfo.current])
 
-  useEffect(() => {
-    // TODO: fetch the terminal info from backend
-    terminalInfo.current = { token: "55eff85b5bff46d98ecff36ee69d62fe", id: 1 }
-    initiateTerminalSession()
-    terminal.current.loadAddon(fitAddOn.current);
-    terminal.current.open(document.getElementById("terminal"));
-    fitAddOn.current.fit();
-    
-    terminal.current.onData((arg1) => {
-      if (ws.current.readyState === ws.current.CLOSED) {
-        console.warn("socket closed")
-        if (confirm("Terminal session closed. Reopen?")) {
-          initiateTerminalSession()
-        }
-      } else {
-        ws.current.send(JSON.stringify(["stdin", arg1]));
-      }
-    });
-
-    // window.addEventListener("unload", () => {
-    //   ws.current.close()
-    // })
-  });
-
   // Setup monaco editor
   useEffect(() => {
     monaco.languages.register({
@@ -133,6 +109,24 @@ export default function Room(props: Props) {
       onChangeUsers: (users) => console.warn("users changed", users)
     })
 
+    // TODO: fetch the terminal info from backend
+    terminalInfo.current = { token: "55eff85b5bff46d98ecff36ee69d62fe", id: 1 }
+    initiateTerminalSession()
+    terminal.current.loadAddon(fitAddOn.current);
+    terminal.current.open(document.getElementById("terminal"));
+    fitAddOn.current.fit();
+    
+    terminal.current.onData((arg1) => {
+      if (ws.current.readyState === ws.current.CLOSED) {
+        console.warn("socket closed")
+        if (confirm("Terminal session closed. Reopen?")) {
+          initiateTerminalSession()
+        }
+      } else {
+        ws.current.send(JSON.stringify(["stdin", arg1]));
+      }
+    });
+
     return () => {
       rustpad.current?.dispose();
       rustpad.current = undefined;
@@ -147,10 +141,6 @@ export default function Room(props: Props) {
     // })
 
   })
-
-  if (!editor.current) {
-    return <></> // Replace with loading component
-  }
 
   return (
     <Stack className="full-screen">
