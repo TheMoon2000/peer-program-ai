@@ -20,11 +20,9 @@ import { addMessage, getMessagesInRoom } from "@/actions/chatActions";
 import { chat } from "@/db/schema";
 
 const formatMessages = (
-  initialMessage: Message[],
   chatRecords: (typeof chat.$inferSelect)[]
 ): Message[] => {
   return chatRecords.flatMap((record) => [
-    ...initialMessage,
     {
       // User input as a user message
       id: `${record.messageId}-user`,
@@ -61,7 +59,7 @@ export default function Chat(props: Props) {
   const { messages, input, handleInputChange, handleSubmit, setMessages } =
     useChat({
       // initialInput: `The learner is approaching the question ${DEFAULTQ}`,
-      initialMessages: initialMessage as Message[],
+      // initialMessages: initialMessage as Message[],
       onFinish: (message: Message) => {
         console.log("message", message, "\n", messages);
         addMessage(
@@ -77,8 +75,8 @@ export default function Chat(props: Props) {
   useEffect(() => {
     // TODO: Load in existing chat messages-- since the path is revalidated when a new message is sent, the difference should be updated
     getMessagesInRoom(props.roomId).then((data) => {
-      const formattedMessages: Message[] = formatMessages(initialMessage, data);
-      setMessages(formattedMessages);
+      const formattedMessages: Message[] = formatMessages(data);
+      setMessages([...initialMessage, ...formattedMessages]);
     });
   }, []);
 
