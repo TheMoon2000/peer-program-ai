@@ -4,7 +4,7 @@ import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Split from "react-split";
 import axios from "axios";
-import { Terminal as JTerminal } from "@jupyterlab/terminal";
+import { PyodideInterface, loadPyodide } from "pyodide";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -14,6 +14,7 @@ import { ursaTheme } from "@/functionality/Constants";
 import Rustpad, { UserInfo } from "src/rustpad";
 import Chat from "@/components/chat/chat";
 import useStorage from "use-local-storage-state";
+import debounce from "lodash.debounce"
 // Required for rustpad to work
 import init, { set_panic_hook } from "rustpad-wasm";
 
@@ -56,99 +57,159 @@ import { showDialog } from "@jupyterlab/apputils";
 import LoadingButton from "@mui/lab/LoadingButton";
 import Grading from "../grading/grading";
 import Navbar from "@/components/navbar/navbar";
+import { HOST, axiosInstance } from "@/Constants";
+import { RoomInfo, TestResult } from "@/Data Structures";
+import TestCases from "../grading/test-cases";
 
 interface Props {
   roomId: string;
 }
 
-const axiosInstance = axios.create({
-  baseURL: "https://ursacoding.com/peer",
-});
 
 function generateHue() {
   return Math.floor(Math.random() * 360);
 }
 
+
+
 export default function Room(props: Props) {
   const { room_id } = useParams();
-  const server_id = (room_id as string).replace(/-/g, "");
-  const terminalInfo = useRef<{ token: string; id: number } | undefined>();
+  const roomInfo = useRef<RoomInfo | undefined>()
+  const [terminalInfo, setTerminalInfo] = useState<{ token: string; id: string } | null | undefined>();
+  const [testResults, setTestResults] = useState<TestResult[] | undefined | null>()
   const terminal = useRef<Terminal | undefined>();
+  const isTerminalStarted = useBoolean()
   const fitAddOn = useRef<FitAddon>(new FitAddon());
+  const pyodideRef = useRef<PyodideInterface | undefined>()
   const ws = useRef<WebSocket | undefined>();
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | undefined>();
   const rustpad = useRef<Rustpad>();
   const showNameDialog = useBoolean(false); // TODO
   const [username, setUsername] = useState("");
-  const isUsernameLoading = useBoolean(false);
+  const isTerminalLoading = useBoolean(false);
+  const isRunningTests = useBoolean(false);
 
   // Insertion point color
   const [hue, setHue] = useStorage("hue", { defaultValue: generateHue });
 
-  const initiateTerminalSession = useCallback(() => {
-    if (!terminalInfo.current) {
-      console.warn(
-        "Cannot initiate terminal session because info is not provided"
-      );
-    }
-    const { token, id: terminalId } = terminalInfo.current;
-
+  const initiateTerminalSession = useCallback((terminalId: string, token: string) => {
     ws.current = new WebSocket(
-      `wss://ursacoding.com/notebook/user/${server_id}/terminals/websocket/${terminalId}?token=${token}`
+      `ws://${HOST}/notebook/user/${room_id}/terminals/websocket/${terminalId}?token=${token}`
     );
-    ws.current.onopen = (e) => console.log("socket opened", e);
-    ws.current.onclose = (e) => console.warn("socket closed", e);
-    ws.current.addEventListener("message", (e) => {
+    ws.current.onopen = (e) => {
+      terminal.current.writeln("Welcome to Pear Program's collaborative terminal. Your code is located at main.py. Run `python main.py` to debug it.")
+    };
+    ws.current.onclose = (e) => {
+      setTerminalInfo(null)
+      stopper.dispose()
+      terminal.current.blur()
+      terminal.current.dispose()
+      terminal.current = new Terminal({ cursorBlink: true });
+      terminal.current.loadAddon(fitAddOn.current);
+      terminal.current.open(document.getElementById("terminal"));
+      fitAddOn.current.fit();
+    };
+
+    ws.current.onmessage = (e: MessageEvent<any>) => {
       const [type, content] = JSON.parse(e.data);
       if (type === "stdout") {
         terminal.current.write(content);
         terminal.current.refresh(0, terminal.current.rows);
       }
+    }
+
+    const stopper = terminal.current.onData((arg1) => {
+      if (ws.current.readyState === ws.current.CLOSED) {
+        console.warn("socket closed");
+        if (confirm("Terminal session closed. Reopen?")) {
+          axiosInstance.post(`/rooms/${room_id}/restart-server`).then((r) => {
+            stopper.dispose()
+            
+            setTerminalInfo({ id: r.data.terminal.name, token: token })
+            initiateTerminalSession(r.data.terminal.name, token);
+          });
+        }
+      } else {
+        ws.current.send(JSON.stringify(["stdin", arg1]));
+      }
     });
-  }, [terminalInfo.current]);
+  }, [terminalInfo]);
+
+  // Intelligently save code to the server while balancing API call frequency and recency
+  // When the user has made a change and 
+  const updateCode = useCallback(debounce(() => {
+    const newCode = editor.current.getValue()
+    axiosInstance.post(`/rooms/${room_id}/code`, {
+      file: newCode
+    }).catch(err => {
+      console.warn(err)
+    })
+  }, 1000), [])
 
   // Setup monaco editor
   useEffect(() => {
-    init().then(() => set_panic_hook());
-    monaco.languages.register({
-      id: "json",
-      extensions: [".json", ".jsonc"],
-      aliases: ["JSON", "json"],
-      mimetypes: ["application/json"],
-    });
-    monaco.languages.register({
-      id: "python",
-      extensions: [".py", ".python"],
-      aliases: ["Python", "python"],
-    });
+    terminal.current = new Terminal({ cursorBlink: true });
+    terminal.current.loadAddon(fitAddOn.current);
+    terminal.current.open(document.getElementById("terminal"));
+    fitAddOn.current.fit();
 
-    monaco.languages.setMonarchTokensProvider("python", pylanguage);
-    monaco.languages.setLanguageConfiguration("python", pyconf);
+    // init().then(() => set_panic_hook());
+    loadPyodide({indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/"}).then(p => pyodideRef.current = p)
 
-    monaco.editor.getModels().forEach((m) => m.dispose());
-    monaco.editor.defineTheme("ursa", ursaTheme);
-
-    editor.current = monaco.editor.create(
-      document.querySelector("#code-editor")!,
-      {
-        minimap: {
-          enabled: false, // This disables the minimap
-        },
-
-        language: "python",
-        lineHeight: 21,
-        renderLineHighlight: "all",
-        fontSize: 15,
-        suggestFontSize: 14,
-        suggestLineHeight: 25,
-        lineNumbersMinChars: 4,
-        padding: { top: 5 },
-        theme: "ursa",
-        fontFamily: "Menlo, Consolas, monospace",
-        automaticLayout: true,
+    axiosInstance.get(`/rooms/${room_id}?email=${localStorage.getItem("email")}`).then(response => {
+      roomInfo.current = response.data as RoomInfo
+      
+      setTestResults(roomInfo.current.room.test_results)
+      if (roomInfo.current.room.jupyter_server_token && roomInfo.current.server.terminal_id) {
+        setTerminalInfo({ id: roomInfo.current.server.terminal_id, token: roomInfo.current.room.jupyter_server_token })
+        initiateTerminalSession(roomInfo.current.server.terminal_id, roomInfo.current.room.jupyter_server_token)
+      } else {
+        setTerminalInfo(null)
       }
-    );
+      
+      monaco.languages.register({
+        id: "json",
+        extensions: [".json", ".jsonc"],
+        aliases: ["JSON", "json"],
+        mimetypes: ["application/json"],
+      });
+      monaco.languages.register({
+        id: "python",
+        extensions: [".py", ".python"],
+        aliases: ["Python", "python"],
+      });
+  
+      monaco.languages.setMonarchTokensProvider("python", pylanguage);
+      monaco.languages.setLanguageConfiguration("python", pyconf);
+  
+      monaco.editor.getModels().forEach((m) => m.dispose());
+      monaco.editor.defineTheme("ursa", ursaTheme);
+      console.log(roomInfo.current)
+      editor.current = monaco.editor.create(
+        document.querySelector("#code-editor")!,
+        {
+          value: roomInfo.current.room.code,
+          minimap: {
+            enabled: false, // This disables the minimap
+          },
+  
+          language: "python",
+          lineHeight: 21,
+          renderLineHighlight: "all",
+          fontSize: 15,
+          suggestFontSize: 14,
+          suggestLineHeight: 25,
+          lineNumbersMinChars: 4,
+          padding: { top: 5 },
+          theme: "ursa",
+          fontFamily: "Menlo, Consolas, monospace",
+          automaticLayout: true,
+        }
+      );
+      editor.current.onDidChangeModelContent(updateCode)
+    })
 
+    
     window.onresize = (ev: UIEvent) => {
       // Update editor layout
       editor.current?.layout();
@@ -157,6 +218,7 @@ export default function Room(props: Props) {
 
     // TODO: fetch the terminal info from backend
     const userId = localStorage.getItem("userId");
+    /*
     Promise.all([
       getRoomById(room_id as string),
       getUserIdsFromRoomId(room_id as string),
@@ -181,7 +243,7 @@ export default function Room(props: Props) {
         if (ws.current.readyState === ws.current.CLOSED) {
           console.warn("socket closed");
           if (confirm("Terminal session closed. Reopen?")) {
-            axiosInstance.post(`/renew/${server_id}`).then((t) => {
+            axiosInstance.post(`/renew/${room_id}`).then((t) => {
               console.log(t);
               initiateTerminalSession();
             });
@@ -204,32 +266,96 @@ export default function Room(props: Props) {
         onChangeUsers: (users) => console.warn("users changed", users),
       });
     });
+    */
 
-    setInterval(() => {
-      axiosInstance.post(`/update-code/${server_id}`, {
-        file: editor.current.getModel().getValue()
-      })
-    }, 3000)
+  
 
     return () => {
       rustpad.current?.dispose();
       rustpad.current = undefined;
     };
-    // editor.current.onDidChangeModelContent(e => {
-
-    // })
-    // editor.current.onDidChangeModelContent(e => {
-    //   const code = this.editorRef!.getModel()!.getValue()
-    //   console.log(code)
-
-    // })
   }, []);
+
+  const runCode = async () => {
+    const currentCode = editor.current.getValue()
+    const pyodide = pyodideRef.current
+    if (!pyodide) {
+      alert("Browser doesn't support python!")
+      return
+    }
+  
+    setTestResults(undefined)
+    isRunningTests.setValue(true)
+
+    let newTestResults: TestResult[] = []
+    for (const testCase of roomInfo.current.room.test_cases) {
+      console.log(`Running test '${testCase.title}'...`)
+      let userStdin: string[] = []
+      let userStdout: string[] = []
+      let currentOutput = ""
+      let errMsg: string | undefined = undefined
+      pyodide.setStdout({
+        // batched: (line: string) => {
+        //   userStdout.push(line)
+        //   userStdin.push("") // temporary
+        //   console.log('output', line)
+        // },
+        raw: (ascii: number) => {
+          const char = String.fromCharCode(ascii)
+          if (char === "\n") {
+            userStdout.push(currentOutput)
+            userStdin.push("")
+            currentOutput = ""
+          } else {
+            currentOutput += char
+          }
+        }
+      })
+
+      let lineIndex = 0
+      pyodide.setStdin({ stdin: () => {
+        userStdout.push(currentOutput)
+        currentOutput = ""
+        const input = testCase.stdin[lineIndex++]
+        if (input === undefined) {
+          return ""
+        } else {
+          userStdin[lineIndex - 1] = input
+          return input
+        }
+      }, isatty: false })
+
+      await pyodide.runPythonAsync(currentCode).catch(err => {
+        errMsg = `${err}`
+      })
+
+      if (currentOutput) {
+        userStdout.push(currentOutput)
+      }
+
+      newTestResults.push({
+        stdinObserved: userStdin,
+        stdoutObserved: userStdout,
+        error: errMsg,
+        isCorrect: !errMsg && userStdout.every((v, i) => v.trim() === testCase.stdout_expected[i]?.trim())
+      })
+    }
+
+    console.log('test results', newTestResults)
+    
+    await axiosInstance.post(`/rooms/${room_id}/test_results`, {
+      test_results: newTestResults
+    })
+    isRunningTests.setValue(false)
+    setTestResults(newTestResults)
+    
+  }
 
   return (
     <>
       <Stack className="full-screen">
         {/* Navigation bar */}
-        <Navbar></Navbar>
+        <Navbar onRun={runCode}></Navbar>
         {/* <Stack
           height="4rem"
           sx={{ backgroundColor: "#dbe0f5" }}
@@ -245,15 +371,16 @@ export default function Room(props: Props) {
           direction="horizontal"
           sizes={[32, 68]}
           gutterSize={6}
-          style={{ flexGrow: 1 }}
+          style={{ flexGrow: 1, maxHeight: "calc(100vh - 100px)" }}
         >
-          <Chat
+          {/* <Chat
             roomId={room_id as string}
             userId={localStorage.getItem("userId")!}
             editor={editor.current}
             usersOnline={[{ name: "Jerry" }, { name: "Chinat" }]}
             userName={username}
-          />
+          /> */}
+          <div />
 
           <div>
             <Split
@@ -273,7 +400,8 @@ export default function Room(props: Props) {
               <div>
                 <Split
                   className="code-split"
-                  sizes={[50, 50]}
+                  style={{flexShrink: 1, alignItems: "stretch", position: "relative"}}
+                  sizes={[55, 45]}
                   direction="horizontal"
                   gutterSize={6}
                   snapOffset={0}
@@ -282,22 +410,33 @@ export default function Room(props: Props) {
                   }}
                 >
                   <div id="code-editor"></div>
-                  <Grading editor={editor.current} />
+                  {/* <Grading editor={editor.current} /> */}
+                  <TestCases onRun={runCode} cases={roomInfo.current?.room.test_cases} results={testResults} isWaiting={isRunningTests.value} />
                 </Split>
               </div>
               <Box position="relative">
                 <div
                   id="terminal"
                   className="full-screen"
-                  style={{ overflowY: "auto" }}
+                  style={{ overflowY: "auto", flexShrink: 0 }}
                 />
+                {terminalInfo === null && <div className="flex absolute w-full h-full justify-center items-center">
+                   <LoadingButton loading={isTerminalLoading.value} sx={{color: "#e0e0e0", borderColor: "#e0e0e050"}} variant="outlined" onClick={() => {
+                    isTerminalLoading.setValue(true)
+                    axiosInstance.post(`/rooms/${room_id}/create-server`).then(r => {
+                      setTerminalInfo({ id: r.data.terminal_id, token: roomInfo.current.room.jupyter_server_token })
+                      initiateTerminalSession(r.data.terminal_id, roomInfo.current.room.jupyter_server_token)
+                    }).catch(err => console.warn(err))
+                    .finally(isTerminalLoading.onFalse)
+                  }}>Start A Collaborative Terminal Session</LoadingButton>
+                </div>}
               </Box>
             </Split>
           </div>
         </Split>
       </Stack>
 
-      <Dialog open={showNameDialog.value} fullWidth maxWidth="sm">
+      {/* <Dialog open={showNameDialog.value} fullWidth maxWidth="sm">
         <DialogTitle>Looks like it is your first time here</DialogTitle>
         <DialogContent>
           <Box mb={2} mt={-0.25}>
@@ -334,7 +473,7 @@ export default function Room(props: Props) {
             Join Room
           </LoadingButton>
         </DialogActions>
-      </Dialog>
+      </Dialog> */}
     </>
   );
 }

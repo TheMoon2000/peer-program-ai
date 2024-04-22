@@ -1,10 +1,12 @@
+import axios from "axios";
+
 export const BLANK_IMAGE = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
 
-/* For global feature control */
-export const CONFIG = {
-    enable_help_queue: true,
-    site_is_down: false // If true, disable all pages globally
-}
+export const HOST = "172.174.247.133";
+export const axiosInstance = axios.create({
+  baseURL: `http://${HOST}/api`,
+});
+
 
 export const SYNTAX_THEME = {
     "code[class*=\"language-\"]": {

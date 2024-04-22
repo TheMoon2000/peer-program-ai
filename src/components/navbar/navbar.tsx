@@ -10,26 +10,26 @@ import { useBoolean } from "@/hooks/use-boolean";
 
 interface Props {
   authToken?: string
+  onRun: () => void
 }
 
 export default function Navbar(props: Props) {
-  const [meeting, initMeeting] = useDyteClient()
+  // const [meeting, initMeeting] = useDyteClient()
   const showVideo = useBoolean(false)
 
     useEffect(() => {
-        initMeeting({
-            authToken: props.authToken ?? "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmdJZCI6ImI1Y2Q5MjY2LWRkZWQtNDI4OC05ZDE5LTE3MWRkNzg0YmIxOCIsIm1lZXRpbmdJZCI6ImJiYjBkNTBiLWVlOWQtNGI4MC1iZTUyLTQwZWZhNWM4YjAyZSIsInBhcnRpY2lwYW50SWQiOiJhYWExYzIzOS02MDZjLTQwZmMtYTg2OS05OTIzNjAxMzI0N2UiLCJwcmVzZXRJZCI6IjQwMDg3YzIzLWJjYTAtNGIxYS1iYzc2LWNmODY1MzAwY2YxMyIsImlhdCI6MTcxMzEyNjcxOCwiZXhwIjoxNzIxNzY2NzE4fQ.qnbWCmg331QJgA5lqASOeaZcYdwYbJmtzi4FWwZhD5TqW2-vWiYCFw-I9CWOsOrMMWcYYc_wkzTAl6t0M6MH3ubRB3ypcUFcjqCIehOS-U_SQCkmGbUIb0AdJeLR4-2F3T_qjQpXF2syYt6Ol5szlF1WFxXW3t0ktzAn9A6jSdi_mHogdwk7l8Kub7HJGpwPKpLdDDrrPGD8ZlaO1uglKOL_f8sJ2RzEgwBwOsLsilrLDHs7WsAyLwV-j64LBMSqc1gsRCq5dnYCfazhk9mrBBj4E5aAckbLqLcOVJjjBt3u2kjODsnsokGHbhEi78g9lNqk_GXrL3xHJWBDCtgOxA",
-            defaults: {
-                audio: false,
-                video: true
-            }
-        })//.then((m) => m?.joinRoom())
+        // initMeeting({
+        //     authToken: props.authToken ?? "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmdJZCI6ImI1Y2Q5MjY2LWRkZWQtNDI4OC05ZDE5LTE3MWRkNzg0YmIxOCIsIm1lZXRpbmdJZCI6ImJiYjBkNTBiLWVlOWQtNGI4MC1iZTUyLTQwZWZhNWM4YjAyZSIsInBhcnRpY2lwYW50SWQiOiJhYWE4MGUwNy0xYjliLTQ0ZWMtYTliZi1iN2QxNTE0NzUzNzciLCJwcmVzZXRJZCI6IjQwMDg3YzIzLWJjYTAtNGIxYS1iYzc2LWNmODY1MzAwY2YxMyIsImlhdCI6MTcxMzEzNzg3MywiZXhwIjoxNzIxNzc3ODczfQ.q8Nxsgzp9NgdkhyLOJbOQEO0mL05492sCjXRISselKGF-NmF6XaoHf6BvvkgXfTMJR33pgALpCkBJVcSIeFO78DwyTQ-rJd-edvaZHpUp-vg14OJiIE1iX8FzdpEd6E5HEoJC-V9KILKa4EqHWkqTVtec_XyfiSDB2NnjltoyhIE_h1tDqsneWqzy-EqHjbml7OPFUPQ5lBriqHsQhv6U-kba-cIirQdkjNpNe7gct_EBq556FoeSmLfeqx6gx67QVkExm6xOUBvdKFQmWDeAR9rcz-qsJMxc8hZBxoQrN3OMBNFS7-08LOsOH8DS3Df9SRmpVaODEMD5-CRTZJQ2Q",
+        //     defaults: {
+        //         audio: false,
+        //         video: true
+        //     }
+        // })//.then((m) => m?.joinRoom())
     }, [])
 
 
   return (
-    <div className="bg-gray-800 p-8">
-      <div className="md:flex md:items-center md:justify-between">
+      <div style={{height: "100px"}} className="bg-gray-800 p-8 md:flex md:items-center md:justify-between">
         <div className="min-w-0 flex-1">
           <h2 className="text-2xl font-bold leading-7 text-white sm:truncate sm:text-3xl sm:tracking-tight">
             Peer Program
@@ -76,18 +76,18 @@ export default function Navbar(props: Props) {
           <button
             type="button"
             className="ml-3 inline-flex items-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+            onClick={props.onRun}
           >
             Run
           </button>
         </div>
-      </div>
       <Dialog open={showVideo.value} fullScreen>
-        <DyteProvider value={meeting}>
+        {/* <DyteProvider value={meeting}>
           <DyteMeeting mode="fill" meeting={meeting} style={{height: "100%"}} />
         </DyteProvider>
         <DialogActions sx={{justifyContent: "center"}}>
           <Button onClick={showVideo.onFalse}>Hide</Button>
-        </DialogActions>
+        </DialogActions> */}
       </Dialog>
     </div>
   );

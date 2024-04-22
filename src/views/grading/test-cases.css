@@ -1,0 +1,37 @@
+.test-case-container {
+    padding-top: 6px;
+    padding-bottom: 10px;
+    box-sizing: border-box;
+    position: relative;
+}
+.test-case-container .MuiAccordionSummary-gutters {
+    background-color: #e0e0e0;
+    min-height: 42px;
+    transition-duration: background-color 0.2s;
+}
+
+.test-case-container .MuiAccordionSummary, .test-case-container .MuiAccordion-root {
+    border-radius: 10px;
+    min-height: 42px;
+}
+
+.test-case-container .MuiAccordion-root {
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, .125);
+}
+
+.test-case-container .MuiAccordion-root.Mui-expanded:first-of-type {
+    margin-top: 8px;
+}
+
+.test-case-container .MuiAccordionSummary-root.Mui-expanded {
+    min-height: 42px;
+}
+
+.test-case-container .MuiAccordionSummary-root .MuiAccordionSummary-content {
+    margin: 0;
+}
+
+.test-case-container .MuiAccordionSummary-expandIconWrapper.Mui-expanded {
+    transform: rotate(90deg);
+}

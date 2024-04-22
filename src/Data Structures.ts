@@ -19,3 +19,47 @@ export interface CodeSnapshot {
 export interface UserInfo {
     name: string
 }
+
+export interface TestCase {
+	title: string
+	stdin: string[] // The actual pieces of inputs
+	stdin_expected: string[] // Inputs spaced out
+	stdout_expected: string[]
+}
+
+export interface TestResult {
+	stdinObserved: string[]
+    stdoutObserved: string[]
+	error?: string
+	isCorrect: boolean
+}
+
+export interface RoomInfo {
+	room: {
+		id: string
+		code: string
+		is_full: boolean
+		question_id: string | null
+		test_cases: TestCase[] | null
+		test_results: TestResult[] | null
+		jupyter_server_token: string
+	}
+	
+
+	// Null if `question_id` is invalid
+	test_cases: TestCase[] | null
+	
+	server: {
+		terminal_id: string | null // null means no terminal is running
+	}
+	
+	meeting: {
+		participant_id: string | null // Null is the user isn't in the room
+		meeting_id: string | null // same as above
+		user_token: string | null // same as above
+		all_participants: {
+			participant_id: string
+			name: string
+		}[]
+	}
+}
