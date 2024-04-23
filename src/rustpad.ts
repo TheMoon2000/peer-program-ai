@@ -9,14 +9,13 @@ import debounce from "lodash.debounce";
 /** Options passed in to the Rustpad constructor. */
 export type RustpadOptions = {
   readonly uri: string;
-  readonly editor: editor.IStandaloneCodeEditor;
+  readonly editor: editor.ICodeEditor;
   readonly onConnected?: () => unknown;
   readonly onDisconnected?: () => unknown;
   readonly onDesynchronized?: () => unknown;
   readonly onChangeLanguage?: (language: string) => unknown;
   readonly onChangeUsers?: (users: Record<number, UserInfo>) => unknown;
   readonly reconnectInterval?: number;
-  readonly authorId?: string; // single character string
 };
 
 /** A user currently editing the document. */
@@ -158,7 +157,6 @@ class Rustpad {
   }
 
   private handleMessage(msg: ServerMsg) {
-    console.log('received', msg)
     if (msg.Identity !== undefined) {
       this.me = msg.Identity;
     } else if (msg.History !== undefined) {

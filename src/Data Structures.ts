@@ -38,6 +38,9 @@ export interface RoomInfo {
 	room: {
 		id: string
 		code: string
+		author_map: string // maps who wrote what to characters
+		rustpad_code?: string // defined if retrieved from a rustpad
+		rustpad_author_map?: string // defined if retrieved from a rustpad
 		is_full: boolean
 		question_id: string | null
 		test_cases: TestCase[] | null
@@ -45,9 +48,7 @@ export interface RoomInfo {
 		jupyter_server_token: string
 	}
 	
-
-	// Null if `question_id` is invalid
-	test_cases: TestCase[] | null
+	author_id: number | null
 	
 	server: {
 		terminal_id: string | null // null means no terminal is running

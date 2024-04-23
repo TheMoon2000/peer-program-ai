@@ -14,18 +14,20 @@ interface Props {
 }
 
 export default function Navbar(props: Props) {
-  // const [meeting, initMeeting] = useDyteClient()
+  const [meeting, initMeeting] = useDyteClient()
   const showVideo = useBoolean(false)
 
     useEffect(() => {
-        // initMeeting({
-        //     authToken: props.authToken ?? "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmdJZCI6ImI1Y2Q5MjY2LWRkZWQtNDI4OC05ZDE5LTE3MWRkNzg0YmIxOCIsIm1lZXRpbmdJZCI6ImJiYjBkNTBiLWVlOWQtNGI4MC1iZTUyLTQwZWZhNWM4YjAyZSIsInBhcnRpY2lwYW50SWQiOiJhYWE4MGUwNy0xYjliLTQ0ZWMtYTliZi1iN2QxNTE0NzUzNzciLCJwcmVzZXRJZCI6IjQwMDg3YzIzLWJjYTAtNGIxYS1iYzc2LWNmODY1MzAwY2YxMyIsImlhdCI6MTcxMzEzNzg3MywiZXhwIjoxNzIxNzc3ODczfQ.q8Nxsgzp9NgdkhyLOJbOQEO0mL05492sCjXRISselKGF-NmF6XaoHf6BvvkgXfTMJR33pgALpCkBJVcSIeFO78DwyTQ-rJd-edvaZHpUp-vg14OJiIE1iX8FzdpEd6E5HEoJC-V9KILKa4EqHWkqTVtec_XyfiSDB2NnjltoyhIE_h1tDqsneWqzy-EqHjbml7OPFUPQ5lBriqHsQhv6U-kba-cIirQdkjNpNe7gct_EBq556FoeSmLfeqx6gx67QVkExm6xOUBvdKFQmWDeAR9rcz-qsJMxc8hZBxoQrN3OMBNFS7-08LOsOH8DS3Df9SRmpVaODEMD5-CRTZJQ2Q",
-        //     defaults: {
-        //         audio: false,
-        //         video: true
-        //     }
-        // })//.then((m) => m?.joinRoom())
-    }, [])
+      if (props.authToken) {
+        initMeeting({
+          authToken: props.authToken,
+          defaults: {
+            audio: true,
+            video: true
+          }
+        }).then(m => m?.joinRoom())
+      }
+    }, [props.authToken])
 
 
   return (
@@ -73,21 +75,25 @@ export default function Navbar(props: Props) {
           >
             Toggle Video
           </button>
-          <button
+          {/* <button
             type="button"
             className="ml-3 inline-flex items-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
             onClick={props.onRun}
           >
             Run
-          </button>
+          </button> */}
         </div>
       <Dialog open={showVideo.value} fullScreen>
-        {/* <DyteProvider value={meeting}>
+        {props.authToken ? 
+        <DyteProvider value={meeting}>
           <DyteMeeting mode="fill" meeting={meeting} style={{height: "100%"}} />
         </DyteProvider>
+        :
+        <div className="flex-grow flex justify-center items-center">Visitors cannot join video call.</div>
+        }
         <DialogActions sx={{justifyContent: "center"}}>
-          <Button onClick={showVideo.onFalse}>Hide</Button>
-        </DialogActions> */}
+          <Button variant="outlined" onClick={showVideo.onFalse}>Hide</Button>
+        </DialogActions>
       </Dialog>
     </div>
   );
