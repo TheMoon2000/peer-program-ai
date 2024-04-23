@@ -16,6 +16,7 @@ export type RustpadOptions = {
   readonly onChangeLanguage?: (language: string) => unknown;
   readonly onChangeUsers?: (users: Record<number, UserInfo>) => unknown;
   readonly reconnectInterval?: number;
+  readonly authorId?: string; // single character string
 };
 
 /** A user currently editing the document. */
@@ -157,6 +158,7 @@ class Rustpad {
   }
 
   private handleMessage(msg: ServerMsg) {
+    console.log('received', msg)
     if (msg.Identity !== undefined) {
       this.me = msg.Identity;
     } else if (msg.History !== undefined) {

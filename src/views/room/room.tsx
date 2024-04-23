@@ -57,7 +57,7 @@ import { showDialog } from "@jupyterlab/apputils";
 import LoadingButton from "@mui/lab/LoadingButton";
 import Grading from "../grading/grading";
 import Navbar from "@/components/navbar/navbar";
-import { HOST, axiosInstance } from "@/Constants";
+import { HOST, axiosInstance, rustpadInstance } from "@/Constants";
 import { RoomInfo, TestResult } from "@/Data Structures";
 import TestCases from "../grading/test-cases";
 
@@ -78,14 +78,14 @@ export default function Room(props: Props) {
   const [terminalInfo, setTerminalInfo] = useState<{ token: string; id: string } | null | undefined>();
   const [testResults, setTestResults] = useState<TestResult[] | undefined | null>()
   const terminal = useRef<Terminal | undefined>();
-  const isTerminalStarted = useBoolean()
   const fitAddOn = useRef<FitAddon>(new FitAddon());
   const pyodideRef = useRef<PyodideInterface | undefined>()
   const ws = useRef<WebSocket | undefined>();
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | undefined>();
   const rustpad = useRef<Rustpad>();
+  const rustpadFailed = useBoolean(false);
+  const authorshipRustpad = useRef<Rustpad>();
   const showNameDialog = useBoolean(false); // TODO
-  const [username, setUsername] = useState("");
   const isTerminalLoading = useBoolean(false);
   const isRunningTests = useBoolean(false);
 
@@ -153,12 +153,17 @@ export default function Room(props: Props) {
     terminal.current.open(document.getElementById("terminal"));
     fitAddOn.current.fit();
 
-    // init().then(() => set_panic_hook());
     loadPyodide({indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/"}).then(p => pyodideRef.current = p)
 
-    axiosInstance.get(`/rooms/${room_id}?email=${localStorage.getItem("email")}`).then(response => {
+    Promise.all([
+      axiosInstance.get(`/rooms/${room_id}?email=${localStorage.getItem("email")}`),
+      fetch("/rustpad_wasm_bg.wasm").then(async r => {
+        await init(r)
+        set_panic_hook()
+      })
+    ]).then(([response]) => {
       roomInfo.current = response.data as RoomInfo
-      
+      console.log(roomInfo.current)
       setTestResults(roomInfo.current.room.test_results)
       if (roomInfo.current.room.jupyter_server_token && roomInfo.current.server.terminal_id) {
         setTerminalInfo({ id: roomInfo.current.server.terminal_id, token: roomInfo.current.room.jupyter_server_token })
@@ -182,9 +187,7 @@ export default function Room(props: Props) {
       monaco.languages.setMonarchTokensProvider("python", pylanguage);
       monaco.languages.setLanguageConfiguration("python", pyconf);
   
-      monaco.editor.getModels().forEach((m) => m.dispose());
       monaco.editor.defineTheme("ursa", ursaTheme);
-      console.log(roomInfo.current)
       editor.current = monaco.editor.create(
         document.querySelector("#code-editor")!,
         {
@@ -207,6 +210,8 @@ export default function Room(props: Props) {
         }
       );
       editor.current.onDidChangeModelContent(updateCode)
+
+      restartRustpad()
     })
 
     
@@ -238,43 +243,50 @@ export default function Room(props: Props) {
       terminal.current.loadAddon(fitAddOn.current);
       terminal.current.open(document.getElementById("terminal"));
       fitAddOn.current.fit();
-
-      terminal.current.onData((arg1) => {
-        if (ws.current.readyState === ws.current.CLOSED) {
-          console.warn("socket closed");
-          if (confirm("Terminal session closed. Reopen?")) {
-            axiosInstance.post(`/renew/${room_id}`).then((t) => {
-              console.log(t);
-              initiateTerminalSession();
-            });
-          }
-        } else {
-          ws.current.send(JSON.stringify(["stdin", arg1]));
-        }
-      });
-
-      // Rustpad init
-      set_panic_hook();
-      rustpad.current = new Rustpad({
-        uri: `wss://ursacoding.com/rustpad/api/socket/${room_id}`,
-        editor: editor.current,
-        onConnected: () => {
-          console.log("rustpad connected!", username, hue);
-          rustpad.current?.setInfo({ name: username, hue: hue });
-        },
-        onDisconnected: () => console.warn("rustpad disconnected :("),
-        onChangeUsers: (users) => console.warn("users changed", users),
-      });
     });
     */
 
-  
+    // Rustpad init
+    // init().then(() => {
+    //   set_panic_hook();
+    
+      // authorshipRustpad.current = new Rustpad({
+      //   uri: `ws://${HOST}/rustpad/api/socket/${room_id}-authors`,
+        
+      // })
+    // })
 
-    return () => {
-      rustpad.current?.dispose();
-      rustpad.current = undefined;
-    };
+    // return () => {
+    //   rustpad.current?.dispose();
+    //   rustpad.current = undefined;
+    // };
   }, []);
+
+  const restartRustpad = useCallback(() => {
+    if (rustpad.current) {
+      rustpad.current.dispose()
+    }
+    if (localStorage.getItem("email")) {
+      rustpad.current = new Rustpad({
+        uri: `ws://${HOST}/rustpad/api/socket/${room_id}`,
+        authorId: localStorage.getItem("email"),
+        editor: editor.current,
+        onConnected: () => {
+          console.log("rustpad connected! hue:", hue);
+          rustpad.current?.setInfo({ name: localStorage.getItem("name"), hue: hue });
+          if (rustpadFailed.value) { rustpadFailed.setValue(false) }
+        },
+        onDisconnected: () => {
+          console.warn("rustpad disconnected :("),
+          rustpadFailed.setValue(true)
+        },
+        onDesynchronized() {
+            rustpadFailed.setValue(true)
+        },
+        onChangeUsers: (users) => console.warn("users changed", users),
+      });
+    }
+  }, [editor.current, room_id])
 
   const runCode = async () => {
     const currentCode = editor.current.getValue()
@@ -409,7 +421,12 @@ export default function Room(props: Props) {
                     editor.current?.layout();
                   }}
                 >
-                  <div id="code-editor"></div>
+                  <div id="code-editor" className="relative">
+                    {rustpadFailed.value && <div className="absolute top-0 bottom-0 left-0 right-0 flex flex-col justify-center items-center z-10" style={{backgroundColor: "#ffffffd0"}}>
+                      <div className="p-2">Failed to connect. Please make sure you don't have another tab open.</div>
+                      <Button onClick={restartRustpad}>Reconnect</Button>
+                    </div>}
+                  </div>
                   {/* <Grading editor={editor.current} /> */}
                   <TestCases onRun={runCode} cases={roomInfo.current?.room.test_cases} results={testResults} isWaiting={isRunningTests.value} />
                 </Split>

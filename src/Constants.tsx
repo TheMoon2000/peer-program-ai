@@ -6,6 +6,9 @@ export const HOST = "172.174.247.133";
 export const axiosInstance = axios.create({
   baseURL: `http://${HOST}/api`,
 });
+export const rustpadInstance = axios.create({
+  baseURL: `http://${HOST}/rustpad/api`
+})
 
 
 export const SYNTAX_THEME = {
