@@ -12,7 +12,7 @@ import "@xterm/xterm/css/xterm.css";
 import { useParams } from "next/navigation";
 import { ursaTheme } from "@/functionality/Constants";
 import Rustpad, { UserInfo } from "src/rustpad";
-import Chat from "@/components/chat/chat";
+import Chat from "./chat";
 import useStorage from "use-local-storage-state";
 import debounce from "lodash.debounce"
 // Required for rustpad to work
@@ -24,25 +24,9 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
 
+import { DyteProvider, useDyteClient, useDyteMeeting } from '@dytesdk/react-web-core';
+
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
-import {
-  CompletionItemKind,
-  CompletionItem as VCompletionItem,
-  Diagnostic as VDiagnostic,
-  WorkspaceFolder,
-} from "vscode-languageclient";
-import { MonacoLanguageClient } from "monaco-languageclient";
-import {
-  toSocket,
-  WebSocketMessageReader,
-  WebSocketMessageWriter,
-} from "vscode-ws-jsonrpc";
-import {
-  CloseAction,
-  ErrorAction,
-  MessageTransports,
-  integer,
-} from "vscode-languageclient";
 import "monaco-editor";
 import {
   language as pylanguage,
@@ -61,6 +45,7 @@ import { HOST, axiosInstance, rustpadInstance } from "@/Constants";
 import { RoomInfo, TestResult } from "@/Data Structures";
 import TestCases from "../grading/test-cases";
 import Loading from "../loading/loading";
+import { DyteChat } from "@dytesdk/react-ui-kit";
 
 interface Props {
   roomId: string;
@@ -92,6 +77,9 @@ export default function Room(props: Props) {
   const isResettingTerminal = useBoolean(false);
   const isRunningTests = useBoolean(false);
   const showResetTerminalDialog = useBoolean(false);
+
+  const [meeting, initMeeting] = useDyteClient()
+
 
   // Insertion point color
   const [hue, setHue] = useStorage("hue", { defaultValue: generateHue });
@@ -168,6 +156,17 @@ export default function Room(props: Props) {
       roomInfo.current = response.data as RoomInfo
       console.log(roomInfo.current)
       setTestResults(roomInfo.current.room.test_results)
+
+      /* temporarily disabled to save api usage */
+      // if (roomInfo.current.meeting.user_token) {
+      //   initMeeting({
+      //     authToken: roomInfo.current.meeting.user_token,
+      //     defaults: {
+      //       audio: true,
+      //       video: true
+      //     }
+      //   }).then(m => m?.joinRoom())
+      // }
       
       isPageLoaded.setValue(true)
     }).catch(err => {
@@ -393,7 +392,7 @@ export default function Room(props: Props) {
   return (
     <>
       <Stack className="full-screen">
-        <Navbar onRun={runCode} authToken={roomInfo.current.meeting.user_token}></Navbar>
+        <Navbar onRun={runCode} meeting={meeting}></Navbar>
         <Split
           className="main-split"
           direction="horizontal"
@@ -401,15 +400,8 @@ export default function Room(props: Props) {
           gutterSize={6}
           style={{ flexGrow: 1, maxHeight: "calc(100vh - 100px)" }}
         >
-          {/* <Chat
-            roomId={room_id as string}
-            userId={localStorage.getItem("userId")!}
-            editor={editor.current}
-            usersOnline={[{ name: "Jerry" }, { name: "Chinat" }]}
-            userName={username}
-          /> */}
-          <div />
-
+         
+          <Chat roomInfo={roomInfo.current} />
           <div>
             <Split
               className="right-split"

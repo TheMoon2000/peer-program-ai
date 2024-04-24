@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { DyteProvider, useDyteClient, useDyteMeeting } from '@dytesdk/react-web-core';
 import { DyteMeeting } from '@dytesdk/react-ui-kit';
 import { useEffect } from "react";
 
@@ -7,28 +6,16 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
 import { useBoolean } from "@/hooks/use-boolean";
+import DyteClient from "@dytesdk/web-core";
+import { DyteProvider } from "@dytesdk/react-web-core";
 
 interface Props {
-  authToken?: string
+  meeting?: DyteClient
   onRun: () => void
 }
 
 export default function Navbar(props: Props) {
-  const [meeting, initMeeting] = useDyteClient()
   const showVideo = useBoolean(false)
-
-    useEffect(() => {
-      if (props.authToken) {
-        initMeeting({
-          authToken: props.authToken,
-          defaults: {
-            audio: true,
-            video: true
-          }
-        }).then(m => m?.joinRoom())
-      }
-    }, [props.authToken])
-
 
   return (
       <div style={{height: "100px"}} className="bg-gray-800 p-8 md:flex md:items-center md:justify-between">
@@ -84,9 +71,9 @@ export default function Navbar(props: Props) {
           </button> */}
         </div>
       <Dialog open={showVideo.value} fullScreen>
-        {props.authToken ? 
-        <DyteProvider value={meeting}>
-          <DyteMeeting mode="fill" meeting={meeting} style={{height: "100%"}} />
+        {props.meeting ? 
+        <DyteProvider value={props.meeting}>
+          <DyteMeeting mode="fill" meeting={props.meeting} style={{height: "100%"}} />
         </DyteProvider>
         :
         <div className="flex-grow flex justify-center items-center">Visitors cannot join video call.</div>
@@ -97,11 +84,4 @@ export default function Navbar(props: Props) {
       </Dialog>
     </div>
   );
-}
-
-function VideoView() {
-  const { meeting } = useDyteMeeting();
-  return <div style={{height: "100vh", width: "100vw"}}>
-      <DyteMeeting mode="fill" meeting={meeting} style={{height: "100%"}} />
-  </div>
 }
