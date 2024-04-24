@@ -116,13 +116,12 @@ export default function LandingPage() {
                     Acknowledgement
                   </label>
                   <p id="comments-description" className="text-white">
-                    I understand that PeerProgram is a research project by
-                    Stanford University.
+                    I understand the terms of service.
                   </p>
                 </div>
               </div>
               {/* <FormControlLabel
-                label="I understand that PeerProgram is a research project by Stanford University"
+                label="I understand the terms of service."
                 control={
                   <Checkbox
                     checked={agree.value}
@@ -164,49 +163,6 @@ export default function LandingPage() {
       {/* <h1 className="text-2xl font-bold underline">{JSON.stringify(rooms)}</h1>
       <h1 className="text-2xl font-bold underline">{JSON.stringify(users)}</h1> */}
 
-      {/* <Box sx={{ display: "flex", flexDirection: "column", height: 1 }}>
-        <Box
-          component="main"
-          style={{ backgroundColor: "#7070e0", flexGrow: 1 }}
-        >
-          <Dialog open={true} maxWidth="sm" fullWidth>
-            <DialogTitle>Welcome to Pear Program</DialogTitle>
-            <DialogContent sx={{ overflow: "visible" }}>
-              <TextField
-                label="Email address"
-                type="email"
-                fullWidth
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <FormControl>
-                <FormControlLabel
-                  label="I understand that PeerProgram is a research project by Stanford University"
-                  sx={{ color: "#606060", mt: 2 }}
-                  control={
-                    <Checkbox
-                      checked={agree.value}
-                      onChange={(e) => agree.setValue(e.target.checked)}
-                    />
-                  }
-                />
-              </FormControl>
-            </DialogContent>
-            <DialogActions>
-              <Button
-                color="primary"
-                variant="contained"
-                sx={{ width: 100 }}
-                onClick={() => handleAdd()}
-                disabled={!agree.value || email.length === 0}
-              >
-                Enter
-              </Button>
-            </DialogActions>
-          </Dialog>
-        </Box>
-      </Box>
-    */}
     </>
   );
 }
