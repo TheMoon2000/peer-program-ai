@@ -24,6 +24,7 @@ import Features from "./Features";
 export default function LandingPage() {
   const agree = useBoolean(false);
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   // const rooms = await getRooms();
@@ -50,7 +51,7 @@ export default function LandingPage() {
       router.push(`/mobile`);
     } else {
       // else
-      const room = await addUserToRoom(newUser);
+      const room = await addUserToRoom(email, name);
       router.push(`/rooms/${room}`);
     }
   };
@@ -81,6 +82,17 @@ export default function LandingPage() {
                   Email address
                 </label>
                 <input
+                  id="name"
+                  name="name"
+                  type="name"
+                  autoComplete="name"
+                  required
+                  className="min-w-0 flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-white shadow-sm ring-1 ring-inset ring-white/10 focus:ring-2 focus:ring-inset focus:ring-white sm:text-sm sm:leading-6"
+                  placeholder="Enter your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+                <input
                   id="email-address"
                   name="email"
                   type="email"
@@ -92,9 +104,11 @@ export default function LandingPage() {
                   onChange={(e) => setEmail(e.target.value)}
                 />
                 <button
-                  className="flex-none rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  className="flex-none rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                   disabled={!agree.value || email.length === 0}
-                  style={{ opacity: (!agree.value || email.length === 0) ? 0.5 : 1 }}
+                  style={{
+                    opacity: !agree.value || email.length === 0 ? 0.5 : 1,
+                  }}
                   onClick={(e) => handleAdd(e)}
                 >
                   Enter
@@ -162,7 +176,6 @@ export default function LandingPage() {
       {/* <h1 className="text-3xl font-bold underline">This is a Landing page.</h1> */}
       {/* <h1 className="text-2xl font-bold underline">{JSON.stringify(rooms)}</h1>
       <h1 className="text-2xl font-bold underline">{JSON.stringify(users)}</h1> */}
-
     </>
   );
 }

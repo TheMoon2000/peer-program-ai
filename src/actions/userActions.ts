@@ -7,6 +7,7 @@ import { roomUsers, rooms, users } from "@/db/schema";
 // import { uuid } from "drizzle-orm/pg-core";
 import { v4 as uuid } from "uuid";
 import { addRoom } from "./roomActions";
+import axios from "axios";
 
 export const getData = async () => {
   const data = await db.select().from(users);
@@ -14,26 +15,33 @@ export const getData = async () => {
 };
 
 export const getSelf = async (userId: string) => {
-  if (!userId) { return undefined }
-  const data = await db.select().from(users).where(eq(users.userId, userId))
+  if (!userId) {
+    return undefined;
+  }
+  const data = await db.select().from(users).where(eq(users.userId, userId));
   return data?.[0];
 };
 
 export const addUser = async (email: string) => {
-  const existingEntry = await db.select().from(users).where(eq(users.userEmail, email))
+  const existingEntry = await db
+    .select()
+    .from(users)
+    .where(eq(users.userEmail, email));
   if (existingEntry.length === 0) {
     const userId = uuid();
-    await db.insert(users).values({
-      userId: userId,
-      userEmail: email,
-      // roomId: "14d3a085-26d0-4bb6-bf9f-e5a90a2d77c4",
-    }).onConflictDoNothing();
+    await db
+      .insert(users)
+      .values({
+        userId: userId,
+        userEmail: email,
+        // roomId: "14d3a085-26d0-4bb6-bf9f-e5a90a2d77c4",
+      })
+      .onConflictDoNothing();
     // revalidatePath("/");
     return userId;
   } else {
-    return existingEntry[0].userId
+    return existingEntry[0].userId;
   }
-
 };
 
 export const updateUser = async (
@@ -66,52 +74,58 @@ export const updateName = async (userId: string, name: string) => {
   return user;
 };
 
-export const addUserToRoom = async (userId: string) => {
-  // TODO: Get a room, find an empty room, or create a new room?
-  // Look for a room that is not full
-  const emptyRoom = await db.select().from(rooms).where(eq(rooms.full, false));
+export const addUserToRoom = async (email: string, name: string) => {
+  const response = await axios.post("http://172.174.247.133/api/rooms", {
+    email: email,
+    name: name,
+  });
 
-  let roomId;
-  // If there is an empty room
-  if (emptyRoom.length > 0) {
-    // add user to Room
-    await db.insert(roomUsers).values({
-      userId: userId,
-      roomId: emptyRoom[0].id,
-    });
+  console.log(response);
+  // // TODO: Get a room, find an empty room, or create a new room?
+  // // Look for a room that is not full
+  // const emptyRoom = await db.select().from(rooms).where(eq(rooms.full, false));
 
-    // update room to be full
-    await db
-      .update(rooms)
-      .set({
-        full: true,
-      })
-      .where(eq(rooms.id, emptyRoom[0].id));
+  // let roomId;
+  // // If there is an empty room
+  // if (emptyRoom.length > 0) {
+  //   // add user to Room
+  //   await db.insert(roomUsers).values({
+  //     userId: userId,
+  //     roomId: emptyRoom[0].id,
+  //   });
 
-    roomId = emptyRoom[0].id;
-  } else {
-    // else create a new room for the user
-    // TODO: NEED TO FIGURE OUT THE OTHER PARTS SOON!
+  //   // update room to be full
+  //   await db
+  //     .update(rooms)
+  //     .set({
+  //       full: true,
+  //     })
+  //     .where(eq(rooms.id, emptyRoom[0].id));
 
-    const newRoomId = await addRoom(
-      "codeState",
-      "question"
-      // "token",
-      // Math.floor(Math.random() * 100),
-      // false
-    );
+  //   roomId = emptyRoom[0].id;
+  // } else {
+  //   // else create a new room for the user
+  //   // TODO: NEED TO FIGURE OUT THE OTHER PARTS SOON!
 
-    // add user to Room
-    await db.insert(roomUsers).values({
-      userId: userId,
-      roomId: newRoomId,
-    });
+  //   const newRoomId = await addRoom(
+  //     "codeState",
+  //     "question"
+  //     // "token",
+  //     // Math.floor(Math.random() * 100),
+  //     // false
+  //   );
 
-    roomId = newRoomId;
-  }
+  //   // add user to Room
+  //   await db.insert(roomUsers).values({
+  //     userId: userId,
+  //     roomId: newRoomId,
+  //   });
+
+  //   roomId = newRoomId;
+  // }
 
   // return room id
-  return roomId;
+  return response.data.room_id;
 };
 
 export const deleteUsers = async (id: string) => {
