@@ -1,69 +1,106 @@
 "use client";
 
 import { RoomInfo } from "@/Data Structures"
-import { useEffect } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { useChatStore } from './store/chatStore';
+import { ChatAI, ChatUser } from "./components/chat";
 interface Props {
     roomInfo: RoomInfo
 }
 
+const email = localStorage.getItem('email')
+
 /* Lobe Chat integration */
 export default function Chat(props: Props) {
-    console.log()
+    const messages = useChatStore((state) => state.messages);
+    const addMessage = useChatStore((state) => state.addMessage);
+    const setMessage = useChatStore((state) => state.setMessage);
+    const chatWS = useRef<WebSocket | undefined>();
+    const containerRef = useRef<HTMLDivElement>(null);
+
+
+    const [inputQuestionValue, setInputQuestionValue] = useState('');
+
+    const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+        setInputQuestionValue(event.target.value);
+    };
+    const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+            handleSendMessage();
+        }
+    };
+    // send user questions
+    const handleSendMessage = () => {
+        const newMessage = { action: "send_text", content: inputQuestionValue }
+        chatWS.current.send(JSON.stringify(newMessage))
+        setInputQuestionValue('')
+        // addMessage(newMessage);
+    };
+    const connectSocketHandler = (e: Event) => {
+        console.log('Connect Success-->', e)
+    }
+    const messageSocketHandler = (e: MessageEvent<any>) => {
+        const responseData = JSON.parse(e.data)
+        if (Array.isArray(responseData)) {
+            addMessage(responseData)
+        } else {
+            console.log('responseData', responseData)
+            setMessage(responseData)
+        }
+    }
+    const errorSocketHandler = (e: Event) => {
+        console.log('Connect Error-->', e)
+    }
+    const closeSocketHandler = (e: Event) => {
+        console.log('Connect Close-->', e)
+    }
+    // init chat websocket
     useEffect(() => {
-        const email = localStorage.getItem('email')
-        console.log('props.roomInfo.room.id--->',props.roomInfo.room.id)
-        const socket = new WebSocket(`ws://172.174.247.133/chat/socket?room=${props.roomInfo.room.id}&email=${email}`);
+        chatWS.current = new WebSocket(`ws://172.174.247.133/chat/socket?room_id=${props.roomInfo.room.id}&email=${email}`)
+        chatWS.current.addEventListener("open", connectSocketHandler)
+        chatWS.current.addEventListener("message", messageSocketHandler)
+        chatWS.current.addEventListener("error", errorSocketHandler)
+        chatWS.current.addEventListener("close", closeSocketHandler)
+    }, [])
 
-        socket.onopen = () => {
-            console.log('WebSocket 连接已建立');
-            // 在连接建立后，可以发送和接收消息
-            socket.send('Hello, WebSocket!');
-        };
-
-        socket.onmessage = (event) => {
-            console.log('收到消息:', event.data);
-            // 处理接收到的消息
-        };
-
-        socket.onclose = () => {
-            console.log('WebSocket 连接已关闭');
-            // 在连接关闭后执行清理操作
-        };
-
-        return () => {
-            // 在组件卸载时关闭 WebSocket 连接
-            socket.close();
-        };
-    }, []);
+    useEffect(() => {
+        // 滚动到底部
+        if (containerRef.current) {
+            containerRef.current.scrollTop = containerRef.current.scrollHeight;
+        }
+    }, [messages]);
     return <>
-        <div className="w-full h-full">
+        <div className="w-full h-full  scrollbar-thumb-red scrollbar-track-red">
             <div className="w-full bg-white-100 rounded-lg shadow-lg p-4 h-full flex justify-between flex-col">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-gray-800">John Doe</h2>
                     <span className="text-sm text-gray-500">12:30 PM</span>
                 </div>
-                <div className="flex flex-col space-y-2 flex-grow">
-                    <div className="flex items-start">
-                        <div className="bg-blue-500 rounded-lg p-2">
-                            <p className="text-white">Hola, ¿cómo estás?</p>
-                        </div>
-                    </div>
-                    <div className="flex items-end justify-end">
-                        <div className="bg-gray-300 rounded-lg p-2">
-                            <p className="text-gray-800">¡Hola! Estoy bien, ¿y tú?</p>
-                        </div>
-                    </div>
-                    <div className="flex items-start">
-                        <div className="bg-blue-500 rounded-lg p-2">
-                            <p className="text-white">Muy bien, gracias por preguntar.</p>
-                        </div>
-                    </div>
+                <div className="flex flex-col space-y-2 flex-grow overflow-y-auto scrollbar-thumb-red scrollbar-track-red" ref={containerRef}>
+                    {messages.map((item, i) => (
+                        <div key={i}>
+                            {item.sender === 'AI' ?
+                                <>
+                                    {item.content.map((c, ci) => (<ChatAI key={ci} type={c.type} value={c.value} />))}
+                                </>
+                                :
+                                <>
+                                    {item.content.map((c, ci) => (<ChatUser key={ci} type={c.type} value={c.value} />))}
+                                </>
+                            }
+                        </div>))}
                 </div>
                 <div className="flex items-center mt-4">
-                    <input type="text" className="flex-grow bg-gray-200 rounded-full px-4 py-2 text-gray-700 focus:outline-none" placeholder="Escribe un mensaje..." />
-                    <button type="button" className="ml-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full px-4 py-2 focus:outline-none">Enviar</button>
+                    <input
+                        type="text"
+                        className="flex-grow bg-gray-200 rounded-full px-4 py-2 text-gray-700 focus:outline-none"
+                        placeholder="Please input what you wanna ask"
+                        value={inputQuestionValue}
+                        onChange={handleInputChange}
+                        onKeyDown={handleInputKeyDown} />
+                    <button type="button" className="ml-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full px-4 py-2 focus:outline-none" onClick={handleSendMessage}>Send</button>
                 </div>
             </div>
-        </div>
+        </div >
     </>
 }

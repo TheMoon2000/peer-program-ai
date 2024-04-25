@@ -23,6 +23,7 @@ const nextConfig = {
     // !! WARN !!
     ignoreBuildErrors: true,
   },
+  transpilePackages: ['@lobehub/ui'],
   // swcMinify: false,
 };
 
