@@ -2,16 +2,16 @@
 const nextConfig = {
   reactStrictMode: false,
   modularizeImports: {
-    '@mui/material': {
-      transform: '@mui/material/{{member}}',
+    "@mui/material": {
+      transform: "@mui/material/{{member}}",
     },
-    '@mui/lab': {
-      transform: '@mui/lab/{{member}}',
+    "@mui/lab": {
+      transform: "@mui/lab/{{member}}",
     },
   },
   eslint: {
     ignoreDuringBuilds: true,
-      // !! WARN !!
+    // !! WARN !!
     // Dangerously allow production builds to successfully complete even if
     // your project has type errors.
     // !! WARN !!
@@ -22,7 +22,8 @@ const nextConfig = {
     // your project has type errors.
     // !! WARN !!
     ignoreBuildErrors: true,
-  }
+  },
+  // swcMinify: false,
 };
 
 export default nextConfig;
