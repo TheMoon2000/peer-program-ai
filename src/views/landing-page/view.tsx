@@ -20,6 +20,7 @@ import { addRoom } from "@/actions/roomActions";
 import { Loader } from "lucide-react";
 import Hero from "./Hero";
 import Features from "./Features";
+import { isDisabled } from "@/utils/helper";
 
 export default function LandingPage() {
   const agree = useBoolean(false);
@@ -35,8 +36,9 @@ export default function LandingPage() {
     e.preventDefault();
     // Check to see if user Exists already?
 
-    const newUser = await addUser(email);
-    localStorage.setItem("userId", newUser);
+    // const newUser = await addUser(email);
+    // localStorage.setItem("userId", newUser);
+    localStorage.setItem("email", email);
     setEmail("");
     setLoading(true);
     // if mobile
@@ -62,6 +64,7 @@ export default function LandingPage() {
       </div>
     );
   }
+
   return (
     <>
       <Hero></Hero>
@@ -105,9 +108,12 @@ export default function LandingPage() {
                 />
                 <button
                   className="flex-none rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                  disabled={!agree.value || email.length === 0}
+                  disabled={
+                    isDisabled(agree, email, name)
+                    // !agree.value || email.length === 0 || name.length === 0
+                  }
                   style={{
-                    opacity: !agree.value || email.length === 0 ? 0.5 : 1,
+                    opacity: isDisabled(agree, email, name) ? 0.5 : 1,
                   }}
                   onClick={(e) => handleAdd(e)}
                 >

@@ -11,9 +11,12 @@ export const getData = async () => {
   const data = await db.select().from(rooms);
   return data;
 };
-export const getRoomById = async (id: string) => {
-  const data = await db.select().from(rooms).where(eq(rooms.id, id));
-  return data;
+export const getRoomById = async (id: string, email: string) => {
+  const response = await axios.get(
+    `http://172.174.247.133/api/rooms/${id}?email=${email}`
+  );
+  // const data = await db.select().from(rooms).where(eq(rooms.id, id));
+  return response.data;
 };
 
 export const getUserIdsFromRoomId = async (id: string) => {

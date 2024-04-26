@@ -2,10 +2,10 @@
 
 import { UserInfo } from "@/Data Structures";
 import Loading from "@/views/loading/loading";
-import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
+// import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 
 interface Props {
-  editor?: monaco.editor.IStandaloneCodeEditor; // first load is empty
+  // editor?: monaco.editor.IStandaloneCodeEditor; // first load is empty
   usersOnline: UserInfo[];
   userName: string;
   userId: string;
@@ -39,7 +39,8 @@ const formatMessages = (
 };
 
 export default function Chat(props: Props) {
-  const currentText = props.editor?.getValue();
+  // const currentText = props.editor?.getValue();
+  const currentText = "";
 
   const initialMessage: Message[] = [
     {
