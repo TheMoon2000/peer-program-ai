@@ -50,6 +50,7 @@ import { RoomInfo, TestResult } from "@/Data Structures";
 import TestCases from "../grading/test-cases";
 import Loading from "../loading/loading";
 import { DyteChat, DyteMeeting, DytePipToggle } from "@dytesdk/react-ui-kit";
+import { ChatPlaceholder } from "./chat-placeholder";
 
 interface Props {
   roomId: string;
@@ -88,26 +89,30 @@ export default function Room(props: Props) {
   // Insertion point color
   const [hue, setHue] = useStorage("hue", { defaultValue: generateHue });
 
-  const initiateTerminalSession = useCallback(
-    (terminalId: string, token: string) => {
-      ws.current = new WebSocket(
-        `ws://${HOST}/notebook/user/${room_id}/terminals/websocket/${terminalId}?token=${token}`
-      );
+  const initiateTerminalSession = useCallback((terminalId: string, token: string, showWelcomeString = true, onOpen?: (ws: WebSocket) => void) => {
+    ws.current = new WebSocket(
+      `ws://${HOST}/notebook/user/${room_id}/terminals/websocket/${terminalId}?token=${token}`
+    );
+    if (showWelcomeString) {
       ws.current.onopen = (e) => {
-        terminal.current.writeln(
-          "Welcome to Pear Program's collaborative terminal. Your code is located at main.py. Run `python main.py` to debug it."
-        );
+        terminal.current.writeln("Welcome to Pear Program's collaborative terminal. Your code is located at main.py. Run `python main.py` to debug it.")
+        onOpen?.(ws.current)
       };
-      ws.current.onclose = (e) => {
-        setTerminalInfo(null);
-        stopper.dispose();
-        terminal.current.blur();
-        terminal.current.dispose();
-        terminal.current = new Terminal({ cursorBlink: true });
-        terminal.current.loadAddon(fitAddOn.current);
-        terminal.current.open(document.getElementById("terminal"));
-        fitAddOn.current.fit();
-      };
+    } else if (onOpen) {
+      ws.current.onopen = () => {
+        onOpen(ws.current)
+      }
+    }
+    ws.current.onclose = (e) => {
+      setTerminalInfo(null)
+      stopper.dispose()
+      terminal.current.blur()
+      terminal.current.dispose()
+      terminal.current = new Terminal({ cursorBlink: true });
+      terminal.current.loadAddon(fitAddOn.current);
+      terminal.current.open(document.getElementById("terminal"));
+      fitAddOn.current.fit();
+    };
 
       ws.current.onmessage = (e: MessageEvent<any>) => {
         const [type, content] = JSON.parse(e.data);
@@ -436,6 +441,16 @@ export default function Room(props: Props) {
     setTestResults(newTestResults);
   };
 
+  const runPythonRunCommand = useCallback(() => {
+      axiosInstance.post(`/rooms/${room_id}/restart-server`).then(r => {
+        setTerminalInfo({ id: r.data.terminal.name, token: roomInfo.current.room.jupyter_server_token })
+        terminalListenerStopper.current.dispose()
+        initiateTerminalSession(r.data.terminal.name, roomInfo.current.room.jupyter_server_token, false, (ws) => {
+          ws.send(JSON.stringify(["stdin", "python main.py\n"]))
+        })
+      })
+  }, [roomInfo])
+
   if (!isPageLoaded.value) {
     return <Loading />;
   } else if (!roomInfo.current) {
@@ -464,7 +479,7 @@ export default function Room(props: Props) {
           </>
         )}
         <Navbar
-          onRun={runCode}
+          onRun={runPythonRunCommand}
           meeting={meeting}
           roomInfo={roomInfo.current}
         ></Navbar>
@@ -475,7 +490,7 @@ export default function Room(props: Props) {
           gutterSize={6}
           style={{ flexGrow: 1, maxHeight: "calc(100vh - 100px)" }}
         >
-          <Chat roomInfo={roomInfo.current} />
+          <ChatPlaceholder roomInfo={roomInfo.current} />
           <div>
             <Split
               className="right-split"

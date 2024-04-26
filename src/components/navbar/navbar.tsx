@@ -84,7 +84,7 @@ export default function Navbar(props: Props) {
             onClick={props.onRun}
           >
             Run
-          </button> */}
+          </button>
       </div>
     </div>
   );
