@@ -84,13 +84,20 @@ export default function Room(props: Props) {
   // Insertion point color
   const [hue, setHue] = useStorage("hue", { defaultValue: generateHue });
 
-  const initiateTerminalSession = useCallback((terminalId: string, token: string) => {
+  const initiateTerminalSession = useCallback((terminalId: string, token: string, showWelcomeString = true, onOpen?: (ws: WebSocket) => void) => {
     ws.current = new WebSocket(
       `ws://${HOST}/notebook/user/${room_id}/terminals/websocket/${terminalId}?token=${token}`
     );
-    ws.current.onopen = (e) => {
-      terminal.current.writeln("Welcome to Pear Program's collaborative terminal. Your code is located at main.py. Run `python main.py` to debug it.")
-    };
+    if (showWelcomeString) {
+      ws.current.onopen = (e) => {
+        terminal.current.writeln("Welcome to Pear Program's collaborative terminal. Your code is located at main.py. Run `python main.py` to debug it.")
+        onOpen?.(ws.current)
+      };
+    } else if (onOpen) {
+      ws.current.onopen = () => {
+        onOpen(ws.current)
+      }
+    }
     ws.current.onclose = (e) => {
       setTerminalInfo(null)
       stopper.dispose()
@@ -381,6 +388,16 @@ export default function Room(props: Props) {
     
   }
 
+  const runPythonRunCommand = useCallback(() => {
+      axiosInstance.post(`/rooms/${room_id}/restart-server`).then(r => {
+        setTerminalInfo({ id: r.data.terminal.name, token: roomInfo.current.room.jupyter_server_token })
+        terminalListenerStopper.current.dispose()
+        initiateTerminalSession(r.data.terminal.name, roomInfo.current.room.jupyter_server_token, false, (ws) => {
+          ws.send(JSON.stringify(["stdin", "python main.py\n"]))
+        })
+      })
+  }, [roomInfo])
+
   if (!isPageLoaded.value) {
     return <Loading />
   } else if (!roomInfo.current) {
@@ -392,7 +409,7 @@ export default function Room(props: Props) {
   return (
     <>
       <Stack className="full-screen">
-        <Navbar onRun={runCode} meeting={meeting}></Navbar>
+        <Navbar onRun={runPythonRunCommand} meeting={meeting}></Navbar>
         <Split
           className="main-split"
           direction="horizontal"
