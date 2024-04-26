@@ -8,6 +8,7 @@ import { roomUsers, rooms, users } from "@/db/schema";
 import { v4 as uuid } from "uuid";
 import { addRoom } from "./roomActions";
 import axios from "axios";
+import { axiosInstance } from "@/Constants";
 
 export const getData = async () => {
   const data = await db.select().from(users);
@@ -75,7 +76,7 @@ export const updateName = async (userId: string, name: string) => {
 };
 
 export const addUserToRoom = async (email: string, name: string) => {
-  const response = await axios.post("http://172.174.247.133/api/rooms", {
+  const response = await axiosInstance.post("/rooms", {
     email: email,
     name: name,
   });
