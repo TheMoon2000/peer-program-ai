@@ -1,46 +1,63 @@
 "use client";
 
 import { RoomInfo } from "@/Data Structures"
-import { ChangeEvent, useEffect, useRef, useState } from "react";
-import { useChatStore } from './store/chatStore';
-import { ChatAI, ChatUser } from "./components/chat";
+import { useEffect, useRef, useState } from "react";
+import { useChatStore, useGlobalStore, useInputMessageStore } from './store/chatStore';
+import { ChatAI, ChatUser, TextArea } from "./components/chat";
+import { DraggablePanel } from '@lobehub/ui';
+import LoadingButton from '@mui/lab/LoadingButton';
+import SendIcon from '@mui/icons-material/Send';
+import { Flexbox } from 'react-layout-kit';
 interface Props {
     roomInfo: RoomInfo
 }
 
 const email = localStorage.getItem('email')
+// 使用 Promise 封装等待函数
+function wait(timeout: number): Promise<void> {
+    return new Promise((resolve) => {
+        setTimeout(resolve, timeout);
+    });
+}
 
 /* Lobe Chat integration */
 export default function Chat(props: Props) {
     const messages = useChatStore((state) => state.messages);
     const addMessage = useChatStore((state) => state.addMessage);
     const setMessage = useChatStore((state) => state.setMessage);
+    const [inputNewMessage, clearNewMessage] = useInputMessageStore((state) => [state.inputNewMessage, state.clearNewMessage]);
+
+
     const chatWS = useRef<WebSocket | undefined>();
+    const [expand, setExpand] = useState<boolean>(false);
+    const [buttonLoading, setButtonLoading] = useState<boolean>(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const updatePreference = useGlobalStore((state) => state.updatePreference);
+    const preference = useGlobalStore((state) => state.preference);
 
-
-    const [inputQuestionValue, setInputQuestionValue] = useState('');
-
-    const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-        setInputQuestionValue(event.target.value);
-    };
-    const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-        if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
-            handleSendMessage();
-        }
-    };
     // send user questions
-    const handleSendMessage = () => {
-        const newMessage = { action: "send_text", content: inputQuestionValue }
+    const handleSendMessage = async () => {
+        console.log('inputNewMessage-->', inputNewMessage)
+        await wait(3000); // 等待 3 秒
+        const newMessage = { action: "send_text", content: inputNewMessage }
         chatWS.current.send(JSON.stringify(newMessage))
-        setInputQuestionValue('')
+        clearNewMessage()
+        setButtonLoading(!buttonLoading)
+        await wait(3000); // 等待 3 秒
+
+        setButtonLoading(false)
         // addMessage(newMessage);
     };
+    const handleSendOption = (optionInfo: string) => {
+        console.log('我发送的消息--->', optionInfo)
+        chatWS.current.send(optionInfo)
+    }
     const connectSocketHandler = (e: Event) => {
         console.log('Connect Success-->', e)
     }
     const messageSocketHandler = (e: MessageEvent<any>) => {
         const responseData = JSON.parse(e.data)
+        console.log('responseData--->', responseData)
         if (Array.isArray(responseData)) {
             addMessage(responseData)
         } else {
@@ -71,35 +88,63 @@ export default function Chat(props: Props) {
     }, [messages]);
     return <>
         <div className="w-full h-full  scrollbar-thumb-red scrollbar-track-red">
-            <div className="w-full bg-white-100 rounded-lg shadow-lg p-4 h-full flex justify-between flex-col">
+            <div className="w-full bg-white-100 rounded-lg shadow-lg p-y-4 h-full flex justify-between flex-col">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-gray-800">John Doe</h2>
                     <span className="text-sm text-gray-500">12:30 PM</span>
                 </div>
-                <div className="flex flex-col space-y-2 flex-grow overflow-y-auto scrollbar-thumb-red scrollbar-track-red" ref={containerRef}>
+                <div className="flex flex-col space-y-2 flex-grow overflow-y-auto scrollbar-thumb-red scrollbar-track-red bg-gray-100" ref={containerRef}>
                     {messages.map((item, i) => (
                         <div key={i}>
-                            {item.sender === 'AI' ?
+                            {item.sender.trim() !== email.trim() ?
                                 <>
-                                    {item.content.map((c, ci) => (<ChatAI key={ci} type={c.type} value={c.value} />))}
+                                    {Array.isArray(item.content) && <ChatAI handleChooseAction={handleSendOption} content={item.content} name={item.name} />}
                                 </>
                                 :
                                 <>
-                                    {item.content.map((c, ci) => (<ChatUser key={ci} type={c.type} value={c.value} />))}
+                                    {Array.isArray(item.content) && item.content.map((c, ci) => (<ChatUser name={item.name} key={ci} type={c.type} value={c.value} />))}
                                 </>
                             }
                         </div>))}
                 </div>
-                <div className="flex items-center mt-4">
-                    <input
-                        type="text"
-                        className="flex-grow bg-gray-200 rounded-full px-4 py-2 text-gray-700 focus:outline-none"
-                        placeholder="Please input what you wanna ask"
-                        value={inputQuestionValue}
-                        onChange={handleInputChange}
-                        onKeyDown={handleInputKeyDown} />
-                    <button type="button" className="ml-2 bg-blue-500 hover:bg-blue-600 text-white rounded-full px-4 py-2 focus:outline-none" onClick={handleSendMessage}>Send</button>
-                </div>
+                <DraggablePanel
+                    fullscreen={expand}
+                    headerHeight={64}
+                    maxHeight={400}
+                    minHeight={150}
+                    onSizeChange={(_, size) => {
+                        if (!size) return;
+                        updatePreference({
+                            inputHeight: typeof size.height === 'string' ? Number.parseInt(size.height) : size.height,
+                        });
+                    }}
+                    placement="bottom"
+                    size={{ height: preference.inputHeight, width: '100%' }}
+                    style={{ zIndex: 10 }}
+                >
+
+                    <div className="flex flex-col h-full justify-between">
+                        <Flexbox
+                            gap={8}
+                            height={'100%'}
+                            padding={'12px 0 16px'}
+                            style={{ minHeight: 150, position: 'relative' }}
+                        >
+                            <TextArea sendMessage={handleSendMessage} />
+                            <div className="flex justify-end items-end px-6">
+                                <LoadingButton
+                                    variant="contained"
+                                    endIcon={<SendIcon />}
+                                    loading={buttonLoading}
+                                    loadingPosition="end"
+                                    onClick={handleSendMessage}>
+                                    Send
+                                </LoadingButton>
+                            </div>
+                        </Flexbox>
+
+                    </div>
+                </DraggablePanel>
             </div>
         </div >
     </>

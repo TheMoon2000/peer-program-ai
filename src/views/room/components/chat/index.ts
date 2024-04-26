@@ -1,5 +1,6 @@
 
 import ChatAI from './chat-ai'
 import ChatUser from './chat-user'
-export { ChatAI, ChatUser }
+import TextArea from './textarea'
+export { ChatAI, ChatUser, TextArea }
 
