@@ -63,19 +63,21 @@ export default function Navbar(props: Props) {
             alt=""
           /> */}
         </div>
-
-        <button
-          type="button"
-          className="ml-3 inline-flex items-center rounded-md bg-zinc-50 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
-          onClick={() => props.meeting.participants.pip.enable()}
-          // onClick={showVideo.onTrue}
-        >
-          Show Video
-          {/* <DytePipToggle
+        {props.meeting && (
+          <button
+            type="button"
+            className="ml-3 inline-flex items-center rounded-md bg-zinc-50 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
+            onClick={() => props.meeting.participants.pip.enable()}
+            // disabled={!!props.meeting.participants}
+            // onClick={showVideo.onTrue}
+          >
+            Show Video
+            {/* <DytePipToggle
             meeting={props.meeting}
             className="ml-3 inline-flex items-center rounded-md bg-zinc-50 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
           /> */}
-        </button>
+          </button>
+        )}
         {/* <button
             type="button"
             className="ml-3 inline-flex items-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"

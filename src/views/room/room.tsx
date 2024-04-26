@@ -448,18 +448,19 @@ export default function Room(props: Props) {
 
   return (
     <>
-      {/* <DyteProvider value={meeting}> */}
       <Stack className="full-screen">
         {/* <DytePipToggle meeting={meeting} /> */}
 
         {meeting && ( // Need to render video out to get main context
           <>
+            {/* <DyteProvider value={meeting}> */}
             <DyteMeeting
               mode="fill"
               meeting={meeting}
               style={{ height: "100%" }}
               className="absolute w-0 h-0 overflow-hidden -z-10" // use this to hide the video from view
             />
+            {/* </DyteProvider> */}
           </>
         )}
         <Navbar
