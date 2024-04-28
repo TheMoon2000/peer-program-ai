@@ -89,11 +89,11 @@ export default function Chat(props: Props) {
     return <>
         <div className="w-full h-full  scrollbar-thumb-red scrollbar-track-red">
             <div className="w-full bg-white-100 rounded-lg shadow-lg p-y-4 h-full flex justify-between flex-col">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-gray-800">John Doe</h2>
+                <div className="flex items-center justify-between p-2">
+                    <b className="text-lg font-semibold text-gray-800">{localStorage.getItem("name")}</b>
                     <span className="text-sm text-gray-500">12:30 PM</span>
                 </div>
-                <div className="flex flex-col space-y-2 flex-grow overflow-y-auto scrollbar-thumb-red scrollbar-track-red bg-gray-100" ref={containerRef}>
+                <div className="flex flex-col space-y-2 flex-grow overflow-y-auto scrollbar-thumb-red scrollbar-track-red bg-gray-100 pb-2" ref={containerRef}>
                     {messages.map((item, i) => (
                         <div key={i}>
                             {item.sender.trim() !== email.trim() ?

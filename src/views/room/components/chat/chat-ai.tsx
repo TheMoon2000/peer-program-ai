@@ -93,7 +93,7 @@ const ChatAI = (detailContent: IChatAIProps) => {
                         {content.map((item, i) => (
                             <div key={i}>
                                 {item.type === 'text' && (
-                                    !Array.isArray(item.value) && <MarkdownTextView rawText={item.value}></MarkdownTextView>
+                                    !Array.isArray(item.value) && <MarkdownTextView rawText={item.value} inline />
                                     // <p className="text-black">{item.value}</p>
                                 )}
                                 {item.type === 'choices' && (

@@ -13,9 +13,9 @@ const ChatUser = (detailContent: IChatProps) => {
             <div className="flex items-end justify-end w-3/4">
                 {type === "text" &&
                     <div className="flex items-end justify-end ">
-                        <div className="bg-green-300 rounded-lg p-2">
-                            {!Array.isArray(value) && <MarkdownTextView rawText={value}></MarkdownTextView>}
-                            {/* <p className="text-black">{value}</p> */}
+                        <div className="bg-slate-500 rounded-lg p-2">
+                            {!Array.isArray(value) && <div className="text-neutral-50">
+                                <MarkdownTextView rawText={value} inline /></div>}
                         </div>
                     </div>
                 }
