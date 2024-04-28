@@ -1,9 +1,23 @@
 "use client";
-import { RoomInfo } from "@/Data Structures";
-// import Chat from "@/components/chat/chat"
 
+import { RoomInfo } from "@/Data Structures"
+import { useEffect, useRef, useState } from "react";
+import { useChatStore, useGlobalStore, useInputMessageStore } from './store/chatStore';
+import { ChatAI, ChatUser, TextArea } from "./components/chat";
+import { DraggablePanel } from '@lobehub/ui';
+import LoadingButton from '@mui/lab/LoadingButton';
+import SendIcon from '@mui/icons-material/Send';
+import { Flexbox } from 'react-layout-kit';
 interface Props {
   roomInfo: RoomInfo;
+}
+
+const email = localStorage.getItem('email')
+// 使用 Promise 封装等待函数
+function wait(timeout: number): Promise<void> {
+    return new Promise((resolve) => {
+        setTimeout(resolve, timeout);
+    });
 }
 
 /* Lobe Chat integration */
@@ -28,7 +42,6 @@ interface Props {
 import { Message, useChat } from "ai/react";
 // import MarkdownTextView from "../MarkdownTextView/MarkdownTextView";
 // import { DEFAULTQ } from "./constants";
-import { useEffect } from "react";
 import { addMessage, getMessagesInRoom } from "@/actions/chatActions";
 import { chat } from "@/db/schema";
 import { DEFAULTQ } from "@/components/chat/constants";
@@ -54,116 +67,130 @@ const formatMessages = (
 };
 
 export default function Chat(props: Props) {
-  // const currentText = props.editor?.getValue();
-  const currentText = "";
+    const messages = useChatStore((state) => state.messages);
+    const addMessage = useChatStore((state) => state.addMessage);
+    const setMessage = useChatStore((state) => state.setMessage);
+    const [inputNewMessage, clearNewMessage] = useInputMessageStore((state) => [state.inputNewMessage, state.clearNewMessage]);
 
-  const initialMessage: Message[] = [
-    {
-      id: Date.now().toLocaleString(),
-      content: `You are a helpful code tutor. The learner is approaching the question ${DEFAULTQ}.\n The current editor includes ${currentText}`,
-      role: "system",
-    },
-    // {
-    //   id: Date.now().toLocaleString() + "1",
-    //   content: `The current editor includes ${currentText}`, // need to dynamically update and set it?
-    //   role: "system",
-    // },
-  ];
 
-  // console.log(currentText);
+    const chatWS = useRef<WebSocket | undefined>();
+    const [expand, setExpand] = useState<boolean>(false);
+    const [buttonLoading, setButtonLoading] = useState<boolean>(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const updatePreference = useGlobalStore((state) => state.updatePreference);
+    const preference = useGlobalStore((state) => state.preference);
 
-  const { messages, input, handleInputChange, handleSubmit, setMessages } =
-    useChat({
-      // initialInput: `The learner is approaching the question ${DEFAULTQ}`,
-      // initialMessages: initialMessage as Message[],
-      onFinish: (message: Message) => {
-        console.log("message", message, "\n", messages);
-        addMessage(
-          props.roomId,
-          props.userId,
-          input,
-          message.content,
-          "PeerProgram"
-        );
-        //Need to get to refresh the messages??
-      },
-    });
-  useEffect(() => {
-    // TODO: Load in existing chat messages-- since the path is revalidated when a new message is sent, the difference should be updated
-    getMessagesInRoom(props.roomId).then((data) => {
-      const formattedMessages: Message[] = formatMessages(data);
-      setMessages([...initialMessage, ...formattedMessages]);
-    });
-  }, []);
+    // send user questions
+    const handleSendMessage = async () => {
+        console.log('inputNewMessage-->', inputNewMessage)
+        await wait(3000); // 等待 3 秒
+        const newMessage = { action: "send_text", content: inputNewMessage }
+        chatWS.current.send(JSON.stringify(newMessage))
+        clearNewMessage()
+        setButtonLoading(!buttonLoading)
+        await wait(3000); // 等待 3 秒
 
-  const name = props.userName;
-  // TODO: Need to figure out how to get time from the server?
-  const customHandleSubmit = (e) => {
-    e.preventDefault(); // Prevent the form from submitting immediately
+        setButtonLoading(false)
+        // addMessage(newMessage);
+    };
+    const handleSendOption = (optionInfo: string) => {
+        console.log('我发送的消息--->', optionInfo)
+        chatWS.current.send(optionInfo)
+    }
+    const connectSocketHandler = (e: Event) => {
+        console.log('Connect Success-->', e)
+    }
+    const messageSocketHandler = (e: MessageEvent<any>) => {
+        const responseData = JSON.parse(e.data)
+        console.log('responseData--->', responseData)
+        if (Array.isArray(responseData)) {
+            addMessage(responseData)
+        } else {
+            console.log('responseData', responseData)
+            setMessage(responseData)
+        }
+    }
+    const errorSocketHandler = (e: Event) => {
+        console.log('Connect Error-->', e)
+    }
+    const closeSocketHandler = (e: Event) => {
+        console.log('Connect Close-->', e)
+    }
+    // init chat websocket
+    useEffect(() => {
+        chatWS.current = new WebSocket(`ws://172.174.247.133/chat/socket?room_id=${props.roomInfo.room.id}&email=${email}`)
+        chatWS.current.addEventListener("open", connectSocketHandler)
+        chatWS.current.addEventListener("message", messageSocketHandler)
+        chatWS.current.addEventListener("error", errorSocketHandler)
+        chatWS.current.addEventListener("close", closeSocketHandler)
+    }, [])
 
-    // Update the messages state
-    setMessages([
-      ...(initialMessage as Message[]),
-      ...messages.slice(1), // Include the rest of the messages unchanged
-    ]);
-
-    // Call the original handleSubmit if needed or custom submission logic
-    handleSubmit(e); // This will reset the input and possibly send the message to the server
-  };
-
-  return (
-    <>
-      <div className="flex flex-col w-full mx-auto stretch space-y-4 max-h-[calc(100vh-4rem)] overflow-scroll">
-        {/* <div className="flex flex-col w-full max-w-md mx-auto stretch space-y-4 max-h-screen overflow-scroll"> */}
-        {/* Todo: Load in a live question */}
-        <div className="mx-4">
-          <div className="my-2">
-            {/* <>{currentText}</> */}
-            <MarkdownTextView rawText={DEFAULTQ}></MarkdownTextView>
-          </div>
-          <div className="mb-16">
-            {/* {messages.map((m) => ( */}
-            {messages.slice(1).map((m) => (
-              <div key={m.id} className="flex items-start gap-2.5">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-500">
-                  <span className="text-sm font-medium leading-none text-white">
-                    {m.role === "user" ? name.slice(0, 2).toUpperCase() : "AI"}
-                  </span>
-                </span>
-
-                <div className="flex flex-col gap-1 w-full">
-                  {/* <div className="flex flex-col gap-1 w-full max-w-[320px]"> */}
-                  <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {m.role === "user" ? "User: " : "AI: "}
-                    </span>
-                    {/* <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-                        11:46
-                    </span> */}
-                  </div>
-                  <div className="flex flex-col leading-1.5 p-4 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700">
-                    <p className="text-sm font-normal text-gray-900 dark:text-white">
-                      {" "}
-                      <MarkdownTextView rawText={m.content}></MarkdownTextView>
-                    </p>
-                  </div>
-                  {/* <span class="text-sm font-normal text-gray-500 dark:text-gray-400">Delivered</span> */}
+    useEffect(() => {
+        // 滚动到底部
+        if (containerRef.current) {
+            containerRef.current.scrollTop = containerRef.current.scrollHeight;
+        }
+    }, [messages]);
+    return <>
+        <div className="w-full h-full  scrollbar-thumb-red scrollbar-track-red">
+            <div className="w-full bg-white-100 rounded-lg shadow-lg p-y-4 h-full flex justify-between flex-col">
+                <div className="flex items-center justify-between p-2">
+                    <b className="text-lg font-semibold text-gray-800">{localStorage.getItem("name")}</b>
+                    <span className="text-sm text-gray-500">12:30 PM</span>
                 </div>
-              </div>
-            ))}
-            <div />
+                <div className="flex flex-col space-y-2 flex-grow overflow-y-auto scrollbar-thumb-red scrollbar-track-red bg-gray-100 pb-2" ref={containerRef}>
+                    {messages.map((item, i) => (
+                        <div key={i}>
+                            {item.sender.trim() !== email.trim() ?
+                                <>
+                                    {Array.isArray(item.content) && <ChatAI handleChooseAction={handleSendOption} content={item.content} name={item.name} />}
+                                </>
+                                :
+                                <>
+                                    {Array.isArray(item.content) && item.content.map((c, ci) => (<ChatUser name={item.name} key={ci} type={c.type} value={c.value} />))}
+                                </>
+                            }
+                        </div>))}
+                </div>
+                <DraggablePanel
+                    fullscreen={expand}
+                    headerHeight={64}
+                    maxHeight={400}
+                    minHeight={150}
+                    onSizeChange={(_, size) => {
+                        if (!size) return;
+                        updatePreference({
+                            inputHeight: typeof size.height === 'string' ? Number.parseInt(size.height) : size.height,
+                        });
+                    }}
+                    placement="bottom"
+                    size={{ height: preference.inputHeight, width: '100%' }}
+                    style={{ zIndex: 10 }}
+                >
 
-            <form onSubmit={customHandleSubmit}>
-              <input
-                className="fixed bottom-0 w-full max-w-md p-2 mb-8 border border-gray-300 rounded shadow-xl"
-                value={input}
-                placeholder="Say something..."
-                onChange={handleInputChange}
-              />
-            </form>
-          </div>
-        </div>
-      </div>
+                    <div className="flex flex-col h-full justify-between">
+                        <Flexbox
+                            gap={8}
+                            height={'100%'}
+                            padding={'12px 0 16px'}
+                            style={{ minHeight: 150, position: 'relative' }}
+                        >
+                            <TextArea sendMessage={handleSendMessage} />
+                            <div className="flex justify-end items-end px-6">
+                                <LoadingButton
+                                    variant="contained"
+                                    endIcon={<SendIcon />}
+                                    loading={buttonLoading}
+                                    loadingPosition="end"
+                                    onClick={handleSendMessage}>
+                                    Send
+                                </LoadingButton>
+                            </div>
+                        </Flexbox>
+
+                    </div>
+                </DraggablePanel>
+            </div>
+        </div >
     </>
-  );
 }
