@@ -18,6 +18,7 @@
     "@emotion/styled": "^11.11.5",
     "@iconify/react": "^4.1.1",
     "@jupyterlab/terminal": "^4.1.6",
+    "@lobehub/ui": "^1.138.9",
     "@monaco-editor/react": "^4.6.0",
     "@mui/icons-material": "^5.15.15",
     "@mui/lab": "^5.0.0-alpha.170",
@@ -57,13 +58,15 @@
     "stylis-plugin-rtl": "^2.1.1",
     "tailwind-merge": "^2.2.2",
     "tailwindcss-animate": "^1.0.7",
+    "ua-parser-js": "^1.0.37",
     "use-local-storage-state": "^19.2.0",
     "uuid": "^9.0.1",
     "vscode-languageclient": "^9.0.1",
     "vscode-ws-jsonrpc": "^3.3.1",
     "ws": "^8.16.0",
     "yet-another-react-lightbox": "^3.17.2",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@types/lodash.debounce": "^4.0.9",
