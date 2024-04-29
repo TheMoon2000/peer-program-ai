@@ -2,11 +2,10 @@ import MarkdownTextView from '@/components/MarkdownTextView/MarkdownTextView';
 import { FormControl, FormControlLabel, Radio, RadioGroup, RadioProps, styled } from '@mui/material';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
-
 type IChatProps = {
-    type: "text" | "choices",
+    type: "text" | "choices" | "typing" | string,
     value: string | string[]
-    choice_index?: number,
+    choice_index?: number
 }
 type IChatAIProps = {
     messageId: number,
@@ -79,6 +78,7 @@ const ChatAI = (detailContent: IChatAIProps) => {
                             </div>
                         ))}
                     </div>
+
                 </div>
             </div>
         </div>

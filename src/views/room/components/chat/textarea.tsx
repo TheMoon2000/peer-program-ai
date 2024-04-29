@@ -1,11 +1,11 @@
 import { TextArea } from '@lobehub/ui';
 import { createStyles } from 'antd-style';
 import { TextAreaRef } from 'antd/es/input/TextArea';
-import { memo, useRef } from 'react';
-
+import { ChangeEvent, memo, useRef, useState } from 'react';
+import SendIcon from '@mui/icons-material/Send';
 import { isCommandPressed } from '@/utils/keyboard';
-import { useInputMessageStore } from '../../store/chatStore';
-
+import LoadingButton from '@mui/lab/LoadingButton';
+import { Flexbox } from 'react-layout-kit';
 const useStyles = createStyles(({ css }) => {
     return {
         textarea: css`
@@ -25,50 +25,73 @@ const useStyles = createStyles(({ css }) => {
 
 interface InputAreaProps {
     sendMessage: (value: string) => void,
-    handleUserTyping: () => void
+    sendTypingAction: () => void
+    sendCancelTypingAction: () => void
 }
-
-const InputArea = memo<InputAreaProps>(({ sendMessage, handleUserTyping }) => {
+const email = localStorage.getItem('email')
+const InputArea = memo<InputAreaProps>(({ sendMessage, sendTypingAction, sendCancelTypingAction }) => {
     const { styles } = useStyles();
-    const ref = useRef<TextAreaRef>(null);
-    const isChineseInput = useRef(false);
-    const [inputNewMessage, updateNewMessage] = useInputMessageStore((state) => [state.inputNewMessage, state.updateNewMessage]);
-    const handleChangeInputContent = (event: React.ChangeEvent<HTMLTextAreaElement>): void => {
-        updateNewMessage(event.target.value);
-        handleUserTyping()
+    const textareaRef = useRef<TextAreaRef>(null);
+    const [message, setMessage] = useState<string>('')
+    const handleInputChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+        setMessage(event.target.value);
     };
+    const handleTypingText = (e) => {
+        sendTypingAction()
+    }
+    const handleCancelTypingText = (e) => {
+        sendCancelTypingAction()
+    }
     return (
         <div className='flex flex-col justify-between h-full '>
-            <div className={styles.textareaContainer}>
-                <TextArea
-                    className={`${styles.textarea} scrollbar`}
-                    onBlur={(event) => updateNewMessage(event.target.value)}
-                    onChange={(event) => handleChangeInputContent(event)}
-                    onCompositionEnd={() => { isChineseInput.current = false; }}
-                    onCompositionStart={() => { isChineseInput.current = true; }}
-                    onPressEnter={(e) => {
-                        if (e.shiftKey || isChineseInput.current) return;
-                        const send = () => {
-                            e.preventDefault();
-                            sendMessage(inputNewMessage);
-                        };
-                        const commandKey = isCommandPressed(e);
-                        if (commandKey) {
-                            // wrap
-                            updateNewMessage((e.target as any).value + '\n');
-                            return;
-                        } else {
-                            // send
-                            console.log('no command', inputNewMessage)
-                            send()
-                        }
-                    }}
-                    placeholder='Please input chat content ...'
-                    ref={ref}
-                    type={'pure'}
-                    value={inputNewMessage}
-                />
-            </div>
+            <Flexbox
+                gap={8}
+                height={'100%'}
+                padding={'12px 0 16px'}
+                style={{ minHeight: 150, position: 'relative' }}
+            >
+                <div className={styles.textareaContainer}>
+                    <TextArea
+                        className={`${styles.textarea} scrollbar`}
+                        onBlur={handleCancelTypingText}
+                        onFocus={handleTypingText}
+                        onChange={handleInputChange}
+                        onPressEnter={(e) => {
+                            if (e.shiftKey) return;
+                            const send = () => {
+                                e.preventDefault();
+                                sendMessage(message);
+                                setMessage('')
+                            };
+                            const commandKey = isCommandPressed(e);
+                            if (commandKey) {
+                                // wrap
+                                setMessage(message + '\n');
+                                return;
+                            } else {
+                                send()
+                            }
+                        }}
+                        placeholder='Please input chat content ...'
+                        ref={textareaRef}
+                        type={'pure'}
+                        value={message}
+                    />
+                </div>
+                <div className="flex justify-end items-end px-6">
+                    <LoadingButton
+                        variant="contained"
+                        endIcon={<SendIcon />}
+                        loadingPosition="end"
+                        onClick={() => {
+                            sendMessage(message)
+                            setMessage('')
+                        }}>
+                        Send
+                    </LoadingButton>
+                </div>
+            </Flexbox>
+
         </div>
     );
 });
