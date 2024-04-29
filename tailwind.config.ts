@@ -19,7 +19,8 @@ const config = {
     },
     extend: {
       colors: {
-        chatuser:'#A9EA7A',
+        customBGColor01:'#F8F8F8',
+        customBGColor02:'#F0F0F0',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

@@ -1,21 +1,22 @@
 import MarkdownTextView from "@/components/MarkdownTextView/MarkdownTextView"
+import BubblesLoading from "@/components/chat/BubblesLoading"
 
 type IChatProps = {
-    type: "text" | "choices",
-    value: string | string[]
+    type?: "text" | "choices",
+    value?: string | string[]
     choice_index?: number,
-    name: string
+    name?: string
+    loading?: boolean
 }
 const ChatUser = (detailContent: IChatProps) => {
-    const { type, name, value } = detailContent
+    const { type, name, value, loading } = detailContent
     return (
-        <div className="flex items-start justify-end">
-            <div className="flex items-end justify-end w-3/4">
+        <div className="flex items-start justify-end mt-1">
+            <div className="flex items-end justify-end w-2/3">
                 {type === "text" &&
                     <div className="flex items-end justify-end ">
-                        <div className="bg-slate-500 rounded-lg p-2">
-                            {!Array.isArray(value) && <div className="text-neutral-50">
-                                <MarkdownTextView rawText={value} inline /></div>}
+                        <div className="bg-slate-500 text-gray-50 rounded-lg p-2 ">
+                            {loading ? <BubblesLoading /> : (!Array.isArray(value) && <MarkdownTextView rawText={value}></MarkdownTextView>)}
                         </div>
                     </div>
                 }

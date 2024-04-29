@@ -490,7 +490,7 @@ export default function Room(props: Props) {
           gutterSize={6}
           style={{ flexGrow: 1, maxHeight: "calc(100vh - 100px)" }}
         >
-          <ChatPlaceholder roomInfo={roomInfo.current} />
+          <Chat roomInfo={roomInfo.current} />
           <div>
             <Split
               className="right-split"
@@ -573,7 +573,7 @@ export default function Room(props: Props) {
                       onClick={() => {
                         isResettingTerminal.setValue(true);
                         axiosInstance
-                          .post(`/rooms/${room_id}/create-server`)
+                          .post(`/rooms/${room_id}/create-server`, {email: localStorage.getItem("email")})
                           .then((r) => {
                             setTerminalInfo({
                               id: r.data.terminal_id,
