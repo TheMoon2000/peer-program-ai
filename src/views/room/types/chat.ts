@@ -13,12 +13,15 @@ declare namespace Chatspace {
             choice_index?: number
         }[],
         system_message?: string // e.g. “User X has left the room.”
+        content_index?: number,
+        choice_index?: number
 
     }
     export interface ChatState {
         messages: Chatspace.ChatMessage[];
         addMessage: (message: Chatspace.ChatMessage[]) => void;
         setMessage: (message: Chatspace.ChatMessage) => void;
+        makeChoice: (message: Chatspace.ChatMessage) => void;
     }
 
     export interface GlobalStore {
