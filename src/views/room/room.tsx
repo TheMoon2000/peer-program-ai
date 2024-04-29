@@ -448,7 +448,7 @@ export default function Room(props: Props) {
                 {terminalInfo === null && <div className="flex absolute w-full h-full justify-center items-center">
                    <LoadingButton loading={isResettingTerminal.value} sx={{color: "#e0e0e0", borderColor: "#e0e0e050"}} variant="outlined" onClick={() => {
                     isResettingTerminal.setValue(true)
-                    axiosInstance.post(`/rooms/${room_id}/create-server`).then(r => {
+                    axiosInstance.post(`/rooms/${room_id}/create-server`, {email: localStorage.getItem("email")}).then(r => {
                       setTerminalInfo({ id: r.data.terminal_id, token: roomInfo.current.room.jupyter_server_token })
                       initiateTerminalSession(r.data.terminal_id, roomInfo.current.room.jupyter_server_token)
                     }).catch(err => console.warn(err))

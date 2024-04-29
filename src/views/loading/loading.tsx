@@ -2,7 +2,7 @@ import { Loader } from "lucide-react";
 type ILoadingProps = {
   text?: string
 }
-const Loading = ({ text }) => {
+const Loading = ({ text }: ILoadingProps) => {
   return (
     <div className="h-full w-full flex flex-col items-center justify-center">
       <Loader className="h-6 w-6 text-muted-foreground animate-spin" />
