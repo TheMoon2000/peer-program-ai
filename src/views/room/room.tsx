@@ -409,7 +409,7 @@ export default function Room(props: Props) {
           style={{ flexGrow: 1, maxHeight: "calc(100vh - 100px)" }}
         >
          
-          <Chat roomInfo={roomInfo.current} />
+          <Chat roomInfo={roomInfo.current} revokeTerminal={refreshTerminalDisplay} />
           <div>
             <Split
               className="right-split"
