@@ -5,16 +5,20 @@ import { useEffect, useRef, useState } from "react";
 import { useChatStore, useGlobalStore } from './store/chatStore';
 import { ChatAI, ChatUser, TextArea, ChatAILoading } from "./components/chat";
 import { DraggablePanel } from '@lobehub/ui';
+import Socket from "@/utils/socket";
 
 import Loading from "../loading/loading";
+import { create } from "domain";
 interface Props {
     roomInfo: RoomInfo
 }
 const email = localStorage.getItem('email')
 /* Lobe Chat integration */
 export default function Chat(props: Props) {
+    const {} = props
     const [messages, addMessage, setMessage, makeChoice, typingState] = useChatStore((state) => [state.messages, state.addMessage, state.setMessage, state.makeChoice, state.typingState]);
     const chatWS = useRef<WebSocket | undefined>();
+    const [isConnected, setIsConnected] = useState<boolean>(true);
     const containerRef = useRef<HTMLDivElement>(null);
     const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
     const updatePreference = useGlobalStore((state) => state.updatePreference);
@@ -49,7 +53,7 @@ export default function Chat(props: Props) {
 
     const messageSocketHandler = async (e: MessageEvent<any>) => {
         const responseData = JSON.parse(e.data)
-        console.log('数据信息-->', responseData)
+        // console.log('数据信息-->', responseData)
         if (Array.isArray(responseData)) {
             addMessage(responseData)
         } else {
@@ -62,11 +66,14 @@ export default function Chat(props: Props) {
                 typingState(responseData)
             } else if (responseData.event === "stop_typing") {
                 typingState(responseData)
+            } else if (responseData.event === "terminal_started"){
+
             }
         }
     }
     const restartSocketHandler = () => {
         console.log('Reconnecting....')
+        setIsConnected(false);
         setTimer(setInterval(() => {
             if (email) {
                 chatWS.current = new WebSocket(`ws://172.174.247.133/chat/socket?room_id=${props.roomInfo.room.id}&email=${email}`)
@@ -76,6 +83,7 @@ export default function Chat(props: Props) {
             if (chatWS.current.readyState === 0) {
                 clearInterval(timer)
                 setTimer(timer)
+                setIsConnected(true);
                 chatWS.current.addEventListener("open", connectSocketHandler)
                 chatWS.current.addEventListener("message", messageSocketHandler)
                 chatWS.current.addEventListener("error", errorSocketHandler)
@@ -89,8 +97,7 @@ export default function Chat(props: Props) {
     const closeSocketHandler = (e: Event) => {
         restartSocketHandler()
     }
-    // init chat websocket
-    useEffect(() => {
+    const createWebsocket = () => {
         if (email) {
             chatWS.current = new WebSocket(`ws://172.174.247.133/chat/socket?room_id=${props.roomInfo.room.id}&email=${email}`)
             chatWS.current.addEventListener("open", connectSocketHandler)
@@ -104,12 +111,53 @@ export default function Chat(props: Props) {
             chatWS.current.addEventListener("error", errorSocketHandler)
             chatWS.current.addEventListener("close", closeSocketHandler)
         }
-
+    }
+    // init chat websocket
+    useEffect(() => {
+        // 执行重新连接逻辑
+        if (!chatWS.current) {
+            createWebsocket()
+        }
+        const handleOnline = () => {
+            setIsConnected(true);
+            if (!chatWS.current) {
+                createWebsocket()
+            } else {
+                chatWS.current.addEventListener("open", connectSocketHandler)
+                chatWS.current.addEventListener("message", messageSocketHandler)
+                chatWS.current.addEventListener("error", errorSocketHandler)
+                chatWS.current.addEventListener("close", closeSocketHandler)
+            }
+        };
+        const handleOffline = () => {
+            setIsConnected(false);
+        };
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
     }, [])
+    useEffect(() => {
+        const scrollToBottom = () => {
+            if (containerRef.current) {
+                const scrollContainer = containerRef.current;
+                // 平滑滚动到底部
+                scrollContainer.scrollTo({
+                    top: scrollContainer.scrollHeight,
+                    behavior: 'smooth',
+                });
+            }
+        };
+        // 在组件加载后滚动到底部
+        scrollToBottom();
+    }, [messages]); // 在依赖数组中添加 messages
+
     return <>
-        <div className="min-w-80 w-full h-full  scrollbar-thums sb-red scrollbar-track-red">
-            {timer === null ? <div className="w-full rounded-lg shadow-lg p-y-4 h-full flex justify-between flex-col">
-                <div className="scrollbar flex flex-col space-y-2 flex-grow overflow-y-auto scrollbar-thumb-red scrollbar-track-red bg-customBGColor01" ref={containerRef}>
+        <div className="min-w-80 h-full  scrollbar-thums sb-red scrollbar-track-red">
+            {isConnected ? <div className="w-full rounded-lg shadow-lg p-y-4 h-full flex justify-between flex-col">
+                <div className="scrollbar flex flex-col space-y-2 flex-grow overflow-x-hidden overflow-y-auto scrollbar-thumb-red scrollbar-track-red bg-customBGColor01" ref={containerRef}>
                     {/* Non-anonymous users */}
                     {email !== null && messages.map((item, i) => (
                         <div key={i} className="border-box">
