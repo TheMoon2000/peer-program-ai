@@ -46,11 +46,12 @@ import LoadingButton from "@mui/lab/LoadingButton";
 import Grading from "../grading/grading";
 import Navbar from "@/components/navbar/navbar";
 import { HOST, axiosInstance, rustpadInstance } from "@/Constants";
-import { RoomInfo, TestResult } from "@/Data Structures";
+import { Question, RoomInfo, TestResult } from "@/Data Structures";
 import TestCases from "../grading/test-cases";
 import Loading from "../loading/loading";
 import { DyteChat, DyteMeeting, DytePipToggle } from "@dytesdk/react-ui-kit";
 import { ChatPlaceholder } from "./chat-placeholder";
+import QuestionsDialog from "@/components/QuestionsDialog";
 
 interface Props {
   roomId: string;
@@ -83,36 +84,45 @@ export default function Room(props: Props) {
   const isResettingTerminal = useBoolean(false);
   const isRunningTests = useBoolean(false);
   const showResetTerminalDialog = useBoolean(false);
+  const [questions, setQuestions] = useState<Question[]>();
 
   const [meeting, initMeeting] = useDyteClient();
 
   // Insertion point color
   const [hue, setHue] = useStorage("hue", { defaultValue: generateHue });
 
-  const initiateTerminalSession = useCallback((terminalId: string, token: string, showWelcomeString = true, onOpen?: (ws: WebSocket) => void) => {
-    ws.current = new WebSocket(
-      `ws://${HOST}/notebook/user/${room_id}/terminals/websocket/${terminalId}?token=${token}`
-    );
-    if (showWelcomeString) {
-      ws.current.onopen = (e) => {
-        terminal.current.writeln("Welcome to Pear Program's collaborative terminal. Your code is located at main.py. Run `python main.py` to debug it.")
-        onOpen?.(ws.current)
-      };
-    } else if (onOpen) {
-      ws.current.onopen = () => {
-        onOpen(ws.current)
+  const initiateTerminalSession = useCallback(
+    (
+      terminalId: string,
+      token: string,
+      showWelcomeString = true,
+      onOpen?: (ws: WebSocket) => void
+    ) => {
+      ws.current = new WebSocket(
+        `ws://${HOST}/notebook/user/${room_id}/terminals/websocket/${terminalId}?token=${token}`
+      );
+      if (showWelcomeString) {
+        ws.current.onopen = (e) => {
+          terminal.current.writeln(
+            "Welcome to Pear Program's collaborative terminal. Your code is located at main.py. Run `python main.py` to debug it."
+          );
+          onOpen?.(ws.current);
+        };
+      } else if (onOpen) {
+        ws.current.onopen = () => {
+          onOpen(ws.current);
+        };
       }
-    }
-    ws.current.onclose = (e) => {
-      setTerminalInfo(null)
-      stopper.dispose()
-      terminal.current.blur()
-      terminal.current.dispose()
-      terminal.current = new Terminal({ cursorBlink: true });
-      terminal.current.loadAddon(fitAddOn.current);
-      terminal.current.open(document.getElementById("terminal"));
-      fitAddOn.current.fit();
-    };
+      ws.current.onclose = (e) => {
+        setTerminalInfo(null);
+        stopper.dispose();
+        terminal.current.blur();
+        terminal.current.dispose();
+        terminal.current = new Terminal({ cursorBlink: true });
+        terminal.current.loadAddon(fitAddOn.current);
+        terminal.current.open(document.getElementById("terminal"));
+        fitAddOn.current.fit();
+      };
 
       ws.current.onmessage = (e: MessageEvent<any>) => {
         const [type, content] = JSON.parse(e.data);
@@ -169,12 +179,13 @@ export default function Room(props: Props) {
 
     Promise.all([
       axiosInstance.get(`/rooms/${room_id}?email=${userEmail}`),
+      axiosInstance.get(`/questions`),
       fetch("/rustpad_wasm_bg.wasm").then(async (r) => {
         await init(r);
         set_panic_hook();
       }),
     ])
-      .then(([response]) => {
+      .then(([response, questionsResponse]) => {
         roomInfo.current = response.data as RoomInfo;
         console.log(roomInfo.current);
         setTestResults(roomInfo.current.room.test_results);
@@ -191,6 +202,8 @@ export default function Room(props: Props) {
         }
 
         isPageLoaded.setValue(true);
+
+        setQuestions(questionsResponse.data);
       })
       .catch((err) => {
         console.warn(err);
@@ -360,6 +373,31 @@ export default function Room(props: Props) {
     });
   }, [editor.current, room_id]);
 
+  // change question
+  const handleQuestionChange = async (question: Question) => {
+    console.log("question change", question);
+    const response = await axiosInstance.patch(
+      `/rooms/${room_id}/`,
+      // Pass in the specific question selected
+      {
+        question_id: question.question_id,
+        name: localStorage.getItem("name"),
+      }
+    );
+    // Need to then update the room info
+    // question_id
+    roomInfo.current.room.question_id = response.data.question_id;
+    // test cases
+    setTestResults(response.data.test_cases);
+    // TODO: What are these for? Are they for the coding exercise? If so, where is it stored?
+    // How do I pass it into the LLMBot.ts?
+    // title
+    // roomInfo.current.room.title = question.title;
+    // description
+    // roomInfo.current. = response.data.description;
+    // starter code
+  };
+
   const runCode = async () => {
     const currentCode = editor.current.getValue();
     const pyodide = pyodideRef.current;
@@ -442,14 +480,22 @@ export default function Room(props: Props) {
   };
 
   const runPythonRunCommand = useCallback(() => {
-      axiosInstance.post(`/rooms/${room_id}/restart-server`).then(r => {
-        setTerminalInfo({ id: r.data.terminal.name, token: roomInfo.current.room.jupyter_server_token })
-        terminalListenerStopper.current.dispose()
-        initiateTerminalSession(r.data.terminal.name, roomInfo.current.room.jupyter_server_token, false, (ws) => {
-          ws.send(JSON.stringify(["stdin", "python main.py\n"]))
-        })
-      })
-  }, [roomInfo])
+    axiosInstance.post(`/rooms/${room_id}/restart-server`).then((r) => {
+      setTerminalInfo({
+        id: r.data.terminal.name,
+        token: roomInfo.current.room.jupyter_server_token,
+      });
+      terminalListenerStopper.current.dispose();
+      initiateTerminalSession(
+        r.data.terminal.name,
+        roomInfo.current.room.jupyter_server_token,
+        false,
+        (ws) => {
+          ws.send(JSON.stringify(["stdin", "python main.py\n"]));
+        }
+      );
+    });
+  }, [roomInfo]);
 
   if (!isPageLoaded.value) {
     return <Loading />;
@@ -529,7 +575,7 @@ export default function Room(props: Props) {
                         style={{ backgroundColor: "#ffffffd0" }}
                       >
                         <div className="px-5">
-                          Failed to connect. Please make sure you don't have
+                          Failed to connect. Please make sure you do not have
                           another tab open.
                         </div>
                         <Button onClick={restartRustpad}>Reconnect</Button>
@@ -538,6 +584,10 @@ export default function Room(props: Props) {
                   </div>
                   {/* <Grading editor={editor.current} /> */}
                   {/* <div id="author-editor" className="relative" /> */}
+                  <QuestionsDialog
+                    questions={questions}
+                    handleQuestionChange={handleQuestionChange}
+                  ></QuestionsDialog>
                   <TestCases
                     onRun={runCode}
                     cases={roomInfo.current?.room.test_cases}
@@ -573,7 +623,9 @@ export default function Room(props: Props) {
                       onClick={() => {
                         isResettingTerminal.setValue(true);
                         axiosInstance
-                          .post(`/rooms/${room_id}/create-server`, {email: localStorage.getItem("email")})
+                          .post(`/rooms/${room_id}/create-server`, {
+                            email: localStorage.getItem("email"),
+                          })
                           .then((r) => {
                             setTerminalInfo({
                               id: r.data.terminal_id,
