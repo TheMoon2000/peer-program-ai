@@ -384,14 +384,17 @@ export default function Room(props: Props) {
         name: localStorage.getItem("name"),
       }
     );
+    // Rest test results and trigger a re-render
+    setTestResults(null);
     // Need to then update the room info
     roomInfo.current.room.question_id = response.data.question_id;
-    setTestResults(response.data.test_cases);
+    roomInfo.current.room.test_cases = response.data.test_cases;
     // starter code
     editor.current.setValue(response.data.starterCode);
     authorEditor.current.setValue(
       response.data.starterCode.replace(/[^\n]/g, "?")
     );
+
     // TODO: What are these additional attributes for?
     // title
     // roomInfo.current.room.title = question.title;
