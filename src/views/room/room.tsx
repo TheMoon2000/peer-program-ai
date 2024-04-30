@@ -385,17 +385,18 @@ export default function Room(props: Props) {
       }
     );
     // Need to then update the room info
-    // question_id
     roomInfo.current.room.question_id = response.data.question_id;
-    // test cases
     setTestResults(response.data.test_cases);
-    // TODO: What are these for? Are they for the coding exercise? If so, where is it stored?
-    // How do I pass it into the LLMBot.ts?
+    // starter code
+    editor.current.setValue(response.data.starterCode);
+    authorEditor.current.setValue(
+      response.data.starterCode.replace(/[^\n]/g, "?")
+    );
+    // TODO: What are these additional attributes for?
     // title
     // roomInfo.current.room.title = question.title;
     // description
     // roomInfo.current. = response.data.description;
-    // starter code
   };
 
   const runCode = async () => {
