@@ -451,6 +451,14 @@ export default function Room(props: Props) {
       })
   }, [roomInfo])
 
+  const refreshTerminalDisplay = useCallback((terminalName: string) => {
+    if (roomInfo.current) {
+      setTerminalInfo({ id: terminalName, token: roomInfo.current.room.jupyter_server_token })
+      terminalListenerStopper.current.dispose()
+      initiateTerminalSession(terminalName, roomInfo.current.room.jupyter_server_token)
+    }
+  }, [roomInfo])
+
   if (!isPageLoaded.value) {
     return <Loading />;
   } else if (!roomInfo.current) {
@@ -490,7 +498,8 @@ export default function Room(props: Props) {
           gutterSize={6}
           style={{ flexGrow: 1, maxHeight: "calc(100vh - 100px)" }}
         >
-          <Chat roomInfo={roomInfo.current} />
+         
+          <Chat roomInfo={roomInfo.current} revokeTerminal={refreshTerminalDisplay} />
           <div>
             <Split
               className="right-split"

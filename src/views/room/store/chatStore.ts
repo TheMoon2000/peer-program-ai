@@ -1,4 +1,5 @@
 // src/store/chatStore.ts
+import StoreUtility from '@/utils/store';
 import create from 'zustand';
 
 export const useChatStore = create<Chatspace.ChatState>((set) => ({
@@ -10,12 +11,25 @@ export const useChatStore = create<Chatspace.ChatState>((set) => ({
     return {
       messages: [...state.messages]
     }
+  }),
+  typingState: (message) => set((state) => {
+    if (message.event === 'start_typing') {
+      let existTyping: boolean = false
+      for (let index = 0; index < state.messages.length; index++) {
+        const element = state.messages[index];
+        if (element.sender === message.sender && element.event === message.event) {
+          existTyping = true
+        }
+      }
+      if (existTyping) {
+        return { messages: StoreUtility.removeDuplicates(state.messages) }
+      } else {
+        return { messages: [...state.messages, message] }
+      }
+    } else {
+      return { messages: StoreUtility.clearEventBySender(message.sender, state.messages) }
+    }
   })
-}));
-export const useInputMessageStore = create<Chatspace.InputNewMessageStore>((set) => ({
-  inputNewMessage: '',
-  updateNewMessage: (newMessage) => set((state) => ({ inputNewMessage: newMessage })),
-  clearNewMessage: () => set(() => ({ inputNewMessage: '' })),
 }));
 // 创建全局状态
 export const useGlobalStore = create<Chatspace.GlobalStore>((set) => ({
