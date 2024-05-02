@@ -11,6 +11,7 @@
     "db:push": "npx drizzle-kit push:pg"
   },
   "dependencies": {
+    "@dytesdk/aws-transcribe": "^0.0.2",
     "@dytesdk/react-ui-kit": "^1.66.1",
     "@dytesdk/react-web-core": "^1.36.4",
     "@dytesdk/web-core": "^1.31.0",

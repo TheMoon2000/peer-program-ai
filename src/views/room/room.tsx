@@ -29,6 +29,7 @@ import {
   useDyteClient,
   useDyteMeeting,
 } from "@dytesdk/react-web-core";
+import DyteAWSTranscribe from '@dytesdk/aws-transcribe';
 
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 import "monaco-editor";
@@ -40,7 +41,6 @@ import { getRooms } from "@/db/queries";
 import { getRoomById, getUserIdsFromRoomId } from "@/actions/roomActions";
 import { TextField } from "@mui/material";
 import { useBoolean } from "@/hooks/use-boolean";
-import { getSelf, updateName, updateUser } from "@/actions/userActions";
 import { showDialog } from "@jupyterlab/apputils";
 import LoadingButton from "@mui/lab/LoadingButton";
 import Grading from "../grading/grading";
@@ -51,6 +51,7 @@ import TestCases from "../grading/test-cases";
 import Loading from "../loading/loading";
 import { DyteChat, DyteMeeting, DytePipToggle } from "@dytesdk/react-ui-kit";
 import { ChatPlaceholder } from "./chat-placeholder";
+import AWSTranscribe from "@dytesdk/aws-transcribe/types/AWSTranscribe";
 
 interface Props {
   roomId: string;
@@ -85,6 +86,7 @@ export default function Room(props: Props) {
   const showResetTerminalDialog = useBoolean(false);
 
   const [meeting, initMeeting] = useDyteClient();
+  const awsTranscribe = useRef<AWSTranscribe>();
 
   // Insertion point color
   const [hue, setHue] = useStorage("hue", { defaultValue: generateHue });
@@ -321,6 +323,19 @@ export default function Room(props: Props) {
         // height: 360,
       });
       console.log("logging meeting", meeting.participants);
+      /*
+      awsTranscribe.current = new DyteAWSTranscribe({
+        meeting,
+        //@ts-ignore
+        translate: false, // Control whether to translate the source language to target language or just transcribe
+        source: 'en-US', // Supported languages: https://docs.aws.amazon.com/translate/latest/dg/what-is-languages.html
+        preSignedUrlEndpoint: `http://${HOST}/dyte-aws-transcribe/aws-transcribe-presigned-url`,
+        translationEndpoint: `http://${HOST}/dyte-aws-transcribe/translate`, // ${backend_url}/translate. backend_url is from step 2.4
+      });
+      awsTranscribe.current.transcribe()
+      awsTranscribe.current.on("transcription", async args => {
+        console.log('transcription', args)
+      })*/
     }
   }, [meeting]);
 
@@ -457,7 +472,7 @@ export default function Room(props: Props) {
       terminalListenerStopper.current.dispose()
       initiateTerminalSession(terminalName, roomInfo.current.room.jupyter_server_token)
     }
-  }, [roomInfo])
+  }, [setTerminalInfo, initiateTerminalSession])
 
   if (!isPageLoaded.value) {
     return <Loading />;
