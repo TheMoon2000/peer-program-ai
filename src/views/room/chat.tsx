@@ -54,11 +54,10 @@ export default function Chat(props: Props) {
 
     const messageSocketHandler = async (e: MessageEvent<any>) => {
         const responseData = JSON.parse(e.data)
-        // console.log('数据信息-->', responseData)
+        console.log('数据信息-->', responseData)
         if (Array.isArray(responseData)) {
             addMessage(responseData)
         } else {
-            setMessage(responseData)
             if (responseData.event === "make_choice") {
                 makeChoice(responseData)
             } else if (responseData.sender === "system") {
@@ -69,6 +68,8 @@ export default function Chat(props: Props) {
                 typingState(responseData)
             } else if (responseData.event === "terminal_started") {
                 revokeTerminal(responseData.terminal_id)
+            } else {
+                setMessage(responseData)
             }
         }
     }
@@ -158,7 +159,7 @@ export default function Chat(props: Props) {
     return <>
         <div className="min-w-80 h-full  scrollbar-thums sb-red scrollbar-track-red">
             {isConnected ? <div className="w-full rounded-lg shadow-lg p-y-4 h-full flex justify-between flex-col">
-                <div className="scrollbar flex flex-col space-y-2 flex-grow overflow-x-hidden overflow-y-auto scrollbar-thumb-red scrollbar-track-red bg-customBGColor01" ref={containerRef}>
+                <div className="scrollbar flex flex-col space-y-2 flex-grow overflow-x-hidden overflow-y-auto scrollbar-thumb-red scrollbar-track-red bg-customBGColor01 py-2" ref={containerRef}>
                     {/* Non-anonymous users */}
                     {email !== null && messages.map((item, i) => (
                         <div key={i} className="border-box">
@@ -206,7 +207,7 @@ export default function Chat(props: Props) {
                     style={{ zIndex: 10 }}
                 >
 
-                    <div className="flex flex-col h-full justify-between">
+                    <div className="flex flex-col h-full justify-between bg-white">
                         <TextArea sendMessage={handleSendMessage} sendTypingAction={handleUserTypingText} sendCancelTypingAction={handleUserCancelTypingText} />
                     </div>
                 </DraggablePanel>}

@@ -15,7 +15,7 @@ interface Props {
 
 export default function TestCases(props: Props) {
   return (
-    <div className="px-4 relative test-case-container overflow-y-auto">
+    <div className="px-4 relative test-case-container overflow-y-auto bg-white">
       {props.cases && <div className="py-2">
         <LoadingButton loading={props.isWaiting} variant="outlined" onClick={props.onRun}>Check Correct</LoadingButton>
       </div>}

@@ -14,13 +14,13 @@ const ChatUser = (detailContent: IChatProps) => {
             <div className="flex items-end justify-end w-2/3">
                 {type === "text" &&
                     <div className="flex items-end justify-end ">
-                        <div className="bg-white text-black rounded-lg p-2 ">
+                        <div className="bg-slate-500 text-gray-50 rounded-lg p-2 ">
                             {!Array.isArray(value) && <MarkdownTextView rawText={value}></MarkdownTextView>}
                         </div>
                     </div>
                 }
                 {type === "typing" && <div className="flex items-end justify-end ">
-                    <div className="bg-white rounded-lg p-2 text-black ">
+                    <div className="bg-slate-500 rounded-lg p-2 text-gray-50 ">
                         <BubblesLoading />
                     </div>
                 </div>}
