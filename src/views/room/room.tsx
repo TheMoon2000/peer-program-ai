@@ -375,22 +375,29 @@ export default function Room(props: Props) {
 
   // change question
   const handleQuestionChange = async (question: Question) => {
-    console.log("question change", question);
-    const response = await axiosInstance.patch(
+    const response = await axiosInstance
+      .patch(
       `/rooms/${room_id}/`,
       // Pass in the specific question selected
       {
         question_id: question.question_id,
         name: localStorage.getItem("name"),
       }
-    );
+      )
+      .catch((err) => console.error(err));
+
+    if (!!response && !!response.data) {
     // Need to then update the room info
     roomInfo.current.room.question_id = response.data.question_id;
     roomInfo.current.room.test_cases = response.data.test_cases;
-    // starter code
-    editor.current.setValue(response.data.starterCode);
+      //refresh page
+      // window.location.reload();
+      // // starter code
+      // editor.current.setValue(response.data.starterCode);
+      editor.current.getModel().setValue(response.data.starter_code);
+      // setValue(response.data.starter_code);
     authorEditor.current.setValue(
-      response.data.starterCode.replace(/[^\n]/g, "?")
+        response.data.starter_code.replace(/[^\n]/g, "?")
     );
     // Rest test results and trigger a re-render
     setTestResults(null);
@@ -400,6 +407,7 @@ export default function Room(props: Props) {
     // roomInfo.current.room.title = question.title;
     // description
     // roomInfo.current. = response.data.description;
+    }
   };
 
   const runCode = async () => {

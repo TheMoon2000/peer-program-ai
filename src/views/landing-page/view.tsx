@@ -39,6 +39,7 @@ export default function LandingPage() {
     // const newUser = await addUser(email);
     // localStorage.setItem("userId", newUser);
     localStorage.setItem("email", email);
+    localStorage.setItem("name", name);
     setEmail("");
     setLoading(true);
     // if mobile

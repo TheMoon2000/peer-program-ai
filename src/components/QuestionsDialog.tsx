@@ -40,7 +40,7 @@ const QuestionsDialog: React.FC<QuestionsDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
+          <div className="grid grid-cols-1 items-center gap-4">
             {questions.length > 0 ? (
               questions.map((question) => (
                 <Button
@@ -48,7 +48,9 @@ const QuestionsDialog: React.FC<QuestionsDialogProps> = ({
                   variant="outline"
                   onClick={() => handleQuestionChange(question)}
                 >
-                  {question.title}
+                  <div className="flex-1 text-sm text-center py-2">
+                    {question.title}
+                  </div>
                 </Button>
               ))
             ) : (
