@@ -206,6 +206,13 @@ export default function Room(props: Props) {
       fitAddOn.current.fit();
     };
 
+    // Required to maintain active session
+    setInterval(() => {
+      axiosInstance.post(`/rooms/${roomInfo.current.room.id}/heartbeat`).catch(err => {
+        console.warn(err)
+      })
+    }, 20000)
+
     // return () => {
     //   rustpad.current?.dispose();
     //   rustpad.current = undefined;

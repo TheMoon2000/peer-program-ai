@@ -166,7 +166,7 @@ export default function Chat(props: Props) {
                             {item.sender.trim() !== email.trim() ?
                                 <>
                                     {/* {(item.event && item.event.trim() == 'start_typing') && <ChatAILoading name={item.name} />} */}
-                                    {(item.sender !== 'system' && item.event == 'start_typing') && <ChatAILoading name={item.sender} />}
+                                    {(item.sender !== 'system' && item.event == 'start_typing') && <ChatAILoading name={item.name} />}
                                     {Array.isArray(item.content) && <ChatAI messageId={i} handleChooseAction={handleSendOption} content={item.content} name={item.name} />}
                                 </>
                                 :
