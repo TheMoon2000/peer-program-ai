@@ -1,79 +1,6 @@
 "use server";
-import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 
-import db from "@/db/drizzle";
-import { roomUsers, rooms, users } from "@/db/schema";
-// import { uuid } from "drizzle-orm/pg-core";
-import { v4 as uuid } from "uuid";
-import { addRoom } from "./roomActions";
-import axios from "axios";
 import { axiosInstance } from "@/Constants";
-
-export const getData = async () => {
-  const data = await db.select().from(users);
-  return data;
-};
-
-export const getSelf = async (userId: string) => {
-  if (!userId) {
-    return undefined;
-  }
-  const data = await db.select().from(users).where(eq(users.userId, userId));
-  return data?.[0];
-};
-
-export const addUser = async (email: string) => {
-  const existingEntry = await db
-    .select()
-    .from(users)
-    .where(eq(users.userEmail, email));
-  if (existingEntry.length === 0) {
-    const userId = uuid();
-    await db
-      .insert(users)
-      .values({
-        userId: userId,
-        userEmail: email,
-        // roomId: "14d3a085-26d0-4bb6-bf9f-e5a90a2d77c4",
-      })
-      .onConflictDoNothing();
-    // revalidatePath("/");
-    return userId;
-  } else {
-    return existingEntry[0].userId;
-  }
-};
-
-export const updateUser = async (
-  userId: string,
-  email: string,
-  name: string
-) => {
-  // const userId = uuid();
-  const user = await db
-    .update(users)
-    .set({ userEmail: email, userName: name })
-    .where(eq(users.userId, userId));
-  // await db.update(users)
-  // .set({ name: 'Mr. Dan' })
-  // .where(eq(users.name, 'Dan'));
-
-  return user;
-};
-
-export const updateName = async (userId: string, name: string) => {
-  // const userId = uuid();
-  const user = await db
-    .update(users)
-    .set({ userName: name })
-    .where(eq(users.userId, userId));
-  // await db.update(users)
-  // .set({ name: 'Mr. Dan' })
-  // .where(eq(users.name, 'Dan'));
-
-  return user;
-};
 
 export const addUserToRoom = async (email: string, name: string) => {
   const response = await axiosInstance.post("/rooms", {
@@ -127,12 +54,6 @@ export const addUserToRoom = async (email: string, name: string) => {
 
   // return room id
   return response.data.room_id;
-};
-
-export const deleteUsers = async (id: string) => {
-  await db.delete(users).where(eq(users.userId, id));
-
-  revalidatePath("/");
 };
 
 // export const toggleusers = async (id: number, done: boolean) => {

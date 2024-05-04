@@ -11,6 +11,7 @@ import { notification, Space } from 'antd';
 import { Flexbox } from 'react-layout-kit';
 import { Backdrop, Button, CircularProgress } from "@mui/material";
 import Loading from "../loading/loading";
+import { HOST } from "@/Constants";
 interface Props {
     roomInfo: RoomInfo
 }
@@ -82,7 +83,7 @@ export default function Chat(props: Props) {
     }
     const restartSocketHandler = () => {
         timer = setInterval(() => {
-            chatWS.current = new WebSocket(`ws://172.174.247.133/chat/socket?room_id=${props.roomInfo.room.id}&email=${email}`)
+            chatWS.current = new WebSocket(`wss://${HOST}/chat/socket?room_id=${props.roomInfo.room.id}&email=${email}`)
             if (chatWS.current.readyState === 0) {
                 clearInterval(timer)
                 timer = null
@@ -102,7 +103,7 @@ export default function Chat(props: Props) {
     }
     // init chat websocket
     useEffect(() => {
-        chatWS.current = new WebSocket(`ws://172.174.247.133/chat/socket?room_id=${props.roomInfo.room.id}&email=${email}`)
+        chatWS.current = new WebSocket(`wss://${HOST}/chat/socket?room_id=${props.roomInfo.room.id}&email=${email}`)
         chatWS.current.addEventListener("open", connectSocketHandler)
         chatWS.current.addEventListener("message", messageSocketHandler)
         chatWS.current.addEventListener("error", errorSocketHandler)

@@ -2,12 +2,12 @@ import axios from "axios";
 
 export const BLANK_IMAGE = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
 
-export const HOST = "172.174.247.133";
+export const HOST = "pearprogram.co";
 export const axiosInstance = axios.create({
-  baseURL: `http://${HOST}/api`,
+  baseURL: `https://${HOST}/api`,
 });
 export const rustpadInstance = axios.create({
-  baseURL: `http://${HOST}/rustpad/api`
+  baseURL: `https://${HOST}/rustpad/api`
 })
 
 

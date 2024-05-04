@@ -36,11 +36,8 @@ import {
   language as pylanguage,
   conf as pyconf,
 } from "monaco-editor/esm/vs/basic-languages/python/python.js";
-import { getRooms } from "@/db/queries";
-import { getRoomById, getUserIdsFromRoomId } from "@/actions/roomActions";
 import { TextField } from "@mui/material";
 import { useBoolean } from "@/hooks/use-boolean";
-import { getSelf, updateName, updateUser } from "@/actions/userActions";
 import { showDialog } from "@jupyterlab/apputils";
 import LoadingButton from "@mui/lab/LoadingButton";
 import Grading from "../grading/grading";
@@ -99,7 +96,7 @@ export default function Room(props: Props) {
       onOpen?: (ws: WebSocket) => void
     ) => {
       ws.current = new WebSocket(
-        `ws://${HOST}/notebook/user/${room_id}/terminals/websocket/${terminalId}?token=${token}`
+        `wss://${HOST}/notebook/user/${room_id}/terminals/websocket/${terminalId}?token=${token}`
       );
       if (showWelcomeString) {
         ws.current.onopen = (e) => {
