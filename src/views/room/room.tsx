@@ -84,6 +84,7 @@ export default function Room(props: Props) {
   const [questions, setQuestions] = useState<Question[]>();
 
   const [meeting, initMeeting] = useDyteClient();
+  // const awsTranscribe = useRef<AWSTranscribe>();
 
   // Insertion point color
   const [hue, setHue] = useStorage("hue", { defaultValue: generateHue });
@@ -214,6 +215,13 @@ export default function Room(props: Props) {
       fitAddOn.current.fit();
     };
 
+    // Required to maintain active session
+    setInterval(() => {
+      axiosInstance.post(`/rooms/${roomInfo.current.room.id}/heartbeat`).catch(err => {
+        console.warn(err)
+      })
+    }, 20000)
+
     // return () => {
     //   rustpad.current?.dispose();
     //   rustpad.current = undefined;
@@ -331,6 +339,19 @@ export default function Room(props: Props) {
         // height: 360,
       });
       console.log("logging meeting", meeting.participants);
+      /*
+      awsTranscribe.current = new DyteAWSTranscribe({
+        meeting,
+        //@ts-ignore
+        translate: false, // Control whether to translate the source language to target language or just transcribe
+        source: 'en-US', // Supported languages: https://docs.aws.amazon.com/translate/latest/dg/what-is-languages.html
+        preSignedUrlEndpoint: `http://${HOST}/dyte-aws-transcribe/aws-transcribe-presigned-url`,
+        translationEndpoint: `http://${HOST}/dyte-aws-transcribe/translate`, // ${backend_url}/translate. backend_url is from step 2.4
+      });
+      awsTranscribe.current.transcribe()
+      awsTranscribe.current.on("transcription", async args => {
+        console.log('transcription', args)
+      })*/
     }
   }, [meeting]);
 
@@ -506,6 +527,14 @@ export default function Room(props: Props) {
     });
   }, [roomInfo]);
 
+  const refreshTerminalDisplay = useCallback((terminalName: string) => {
+    if (roomInfo.current) {
+      setTerminalInfo({ id: terminalName, token: roomInfo.current.room.jupyter_server_token })
+      terminalListenerStopper.current.dispose()
+      initiateTerminalSession(terminalName, roomInfo.current.room.jupyter_server_token)
+    }
+  }, [setTerminalInfo, initiateTerminalSession])
+
   if (!isPageLoaded.value) {
     return <Loading />;
   } else if (!roomInfo.current) {
@@ -545,7 +574,8 @@ export default function Room(props: Props) {
           gutterSize={6}
           style={{ flexGrow: 1, maxHeight: "calc(100vh - 100px)" }}
         >
-          <Chat roomInfo={roomInfo.current} />
+         
+          <Chat roomInfo={roomInfo.current} revokeTerminal={refreshTerminalDisplay} />
           <div>
             <Split
               className="right-split"
