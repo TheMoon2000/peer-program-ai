@@ -29,7 +29,9 @@ const QuestionsDialog: React.FC<QuestionsDialogProps> = ({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline">Questions</Button>
+        <div className="p-4">
+          <Button variant="outline">Switch Coding Problem</Button>
+        </div>
       </DialogTrigger>
       <DialogContent className="">
         {/* <DialogContent className="sm:max-w-[425px]"> */}

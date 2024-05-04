@@ -49,6 +49,7 @@ import Loading from "../loading/loading";
 import { DyteChat, DyteMeeting, DytePipToggle } from "@dytesdk/react-ui-kit";
 import { ChatPlaceholder } from "./chat-placeholder";
 import QuestionsDialog from "@/components/QuestionsDialog";
+import { useSnackbar } from "notistack";
 
 interface Props {
   roomId: string;
@@ -82,6 +83,7 @@ export default function Room(props: Props) {
   const isRunningTests = useBoolean(false);
   const showResetTerminalDialog = useBoolean(false);
   const [questions, setQuestions] = useState<Question[]>();
+  const snackbar = useSnackbar()
 
   const [meeting, initMeeting] = useDyteClient();
   // const awsTranscribe = useRef<AWSTranscribe>();
@@ -393,39 +395,29 @@ export default function Room(props: Props) {
 
   // change question
   const handleQuestionChange = async (question: Question) => {
-    const response = await axiosInstance
-      .patch(
-      `/rooms/${room_id}/`,
-      // Pass in the specific question selected
-      {
+    const response = await axiosInstance.patch(`/rooms/${room_id}/`, {
         question_id: question.question_id,
         name: localStorage.getItem("name"),
-      }
-      )
-      .catch((err) => console.error(err));
+      }).catch((err) => console.error(err));
 
     if (!!response && !!response.data) {
-    // Need to then update the room info
-    roomInfo.current.room.question_id = response.data.question_id;
-    roomInfo.current.room.test_cases = response.data.test_cases;
-      //refresh page
-      // window.location.reload();
-      // // starter code
-      // editor.current.setValue(response.data.starterCode);
+      roomInfo.current.room.question_id = response.data.question_id;
+      roomInfo.current.room.test_cases = response.data.test_cases;
       editor.current.getModel().setValue(response.data.starter_code);
-      // setValue(response.data.starter_code);
-    authorEditor.current.setValue(
-        response.data.starter_code.replace(/[^\n]/g, "?")
-    );
-    // Rest test results and trigger a re-render
-    setTestResults(null);
-
+      authorEditor.current.setValue(response.data.starter_code.replace(/[^\n]/g, "?"));
+      setTestResults(null);
+      
+    } else {
+      snackbar.enqueueSnackbar({
+        message: "Unable to switch question. Please check your internet connection.",
+        variant: "warning"
+      })
+    }
     // TODO: What are these additional attributes for?
     // title
     // roomInfo.current.room.title = question.title;
     // description
     // roomInfo.current. = response.data.description;
-    }
   };
 
   const runCode = async () => {
@@ -504,6 +496,8 @@ export default function Room(props: Props) {
 
     await axiosInstance.post(`/rooms/${room_id}/test_results`, {
       test_results: newTestResults,
+    }).catch(err => {
+      console.warn(err)
     });
     isRunningTests.setValue(false);
     setTestResults(newTestResults);
@@ -623,16 +617,18 @@ export default function Room(props: Props) {
                   </div>
                   {/* <Grading editor={editor.current} /> */}
                   {/* <div id="author-editor" className="relative" /> */}
-                  <QuestionsDialog
-                    questions={questions}
-                    handleQuestionChange={handleQuestionChange}
-                  ></QuestionsDialog>
-                  <TestCases
-                    onRun={runCode}
-                    cases={roomInfo.current?.room.test_cases}
-                    results={testResults}
-                    isWaiting={isRunningTests.value}
-                  />
+                  <Box sx={{overflowY: "auto"}}>
+                    <TestCases
+                      onRun={runCode}
+                      cases={roomInfo.current?.room.test_cases}
+                      results={testResults}
+                      isWaiting={isRunningTests.value}
+                    />
+                    <QuestionsDialog
+                      questions={questions}
+                      handleQuestionChange={handleQuestionChange}
+                    />
+                  </Box>
                 </Split>
               </div>
               <Box position="relative">

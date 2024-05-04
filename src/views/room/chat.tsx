@@ -55,7 +55,7 @@ export default function Chat(props: Props) {
 
     const messageSocketHandler = async (e: MessageEvent<any>) => {
         const responseData = JSON.parse(e.data)
-        console.log('数据信息-->', responseData)
+        // console.log('数据信息-->', responseData)
         if (Array.isArray(responseData)) {
             addMessage(responseData)
         } else {
@@ -78,6 +78,7 @@ export default function Chat(props: Props) {
         console.log('Reconnecting....')
         setIsConnected(false);
         setTimer(setInterval(() => {
+            console.log('restartSocketHandler()')
             if (email) {
                 chatWS.current = new WebSocket(`wss://${HOST}/chat/socket?room_id=${props.roomInfo.room.id}&email=${email}`)
             } else {
@@ -101,14 +102,15 @@ export default function Chat(props: Props) {
         restartSocketHandler()
     }
     const createWebsocket = () => {
+        console.log('createWebSocket()')
         if (email) {
-            chatWS.current = new WebSocket(`ws://172.174.247.133/chat/socket?room_id=${props.roomInfo.room.id}&email=${email}`)
+            chatWS.current = new WebSocket(`wss://${HOST}/chat/socket?room_id=${props.roomInfo.room.id}&email=${email}`)
             chatWS.current.addEventListener("open", connectSocketHandler)
             chatWS.current.addEventListener("message", messageSocketHandler)
             chatWS.current.addEventListener("error", errorSocketHandler)
             chatWS.current.addEventListener("close", closeSocketHandler)
         } else {
-            chatWS.current = new WebSocket(`ws://172.174.247.133/chat/socket?room_id=${props.roomInfo.room.id}&email=`)
+            chatWS.current = new WebSocket(`wss://${HOST}/chat/socket?room_id=${props.roomInfo.room.id}&email=`)
             chatWS.current.addEventListener("open", connectSocketHandler)
             chatWS.current.addEventListener("message", messageSocketHandler)
             chatWS.current.addEventListener("error", errorSocketHandler)
