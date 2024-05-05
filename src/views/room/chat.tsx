@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { useChatStore, useGlobalStore } from './store/chatStore';
 import { ChatAI, ChatUser, TextArea, ChatAILoading } from "./components/chat";
 import { DraggablePanel } from '@lobehub/ui';
-import Socket from "@/utils/socket";
 
 import Loading from "../loading/loading";
 import { HOST } from "@/Constants";
@@ -22,9 +21,10 @@ export default function Chat(props: Props) {
     const chatWS = useRef<WebSocket | undefined>();
     const [isConnected, setIsConnected] = useState<boolean>(true);
     const containerRef = useRef<HTMLDivElement>(null);
-    const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
     const updatePreference = useGlobalStore((state) => state.updatePreference);
     const preference = useGlobalStore((state) => state.preference);
+    // restart—timer
+    let timer = null
     // send user questions
     const handleSendMessage = async (message) => {
         const newMessage = { action: "send_text", content: message }
@@ -36,13 +36,6 @@ export default function Chat(props: Props) {
     const handleUserTypingText = () => {
         const typingAction = { action: "start_typing" }
         chatWS.current.send(JSON.stringify(typingAction))
-        // const typingMessage = {
-        //     sender: email,
-        //     event: 'typing',
-        //     name: 'Hello',
-        //     content: [{ type: "typing", value: '', }]
-        // }
-        // setMessage(typingMessage)
     }
     const handleUserCancelTypingText = () => {
         const typingAction = { action: "stop_typing" }
@@ -75,30 +68,31 @@ export default function Chat(props: Props) {
         }
     }
     const restartSocketHandler = () => {
-        console.log('Reconnecting....')
         setIsConnected(false);
-        setTimer(setInterval(() => {
-            console.log('restartSocketHandler()')
+        timer = setInterval(() => {
             if (email) {
                 chatWS.current = new WebSocket(`wss://${HOST}/chat/socket?room_id=${props.roomInfo.room.id}&email=${email}`)
             } else {
                 chatWS.current = new WebSocket(`wss://${HOST}/chat/socket?room_id=${props.roomInfo.room.id}&email=`)
             }
             if (chatWS.current.readyState === 0) {
-                clearInterval(timer)
-                setTimer(timer)
-                setIsConnected(true);
+                clearInterval(timer);
+                timer = null
                 chatWS.current.addEventListener("open", connectSocketHandler)
                 chatWS.current.addEventListener("message", messageSocketHandler)
                 chatWS.current.addEventListener("error", errorSocketHandler)
                 chatWS.current.addEventListener("close", closeSocketHandler)
+                setIsConnected(true);
             }
-        }, 5000))
+        }, 5000)
     }
     const errorSocketHandler = (e: Event) => {
         console.log('Connect Error-->', e)
     }
     const closeSocketHandler = (e: Event) => {
+        setIsConnected(false)
+        chatWS.current = undefined
+        chatWS.current?.close()
         restartSocketHandler()
     }
     const createWebsocket = () => {
@@ -125,17 +119,12 @@ export default function Chat(props: Props) {
         }
         const handleOnline = () => {
             setIsConnected(true);
-            if (!chatWS.current) {
-                createWebsocket()
-            } else {
-                chatWS.current.addEventListener("open", connectSocketHandler)
-                chatWS.current.addEventListener("message", messageSocketHandler)
-                chatWS.current.addEventListener("error", errorSocketHandler)
-                chatWS.current.addEventListener("close", closeSocketHandler)
-            }
+            restartSocketHandler()
         };
         const handleOffline = () => {
             setIsConnected(false);
+            chatWS.current = undefined
+            chatWS.current?.close()
         };
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
