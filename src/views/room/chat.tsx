@@ -90,6 +90,7 @@ export default function Chat(props: Props) {
         console.log('Connect Error-->', e)
     }
     const closeSocketHandler = (e: Event) => {
+        console.log('Connect Close-->', e)
         setIsConnected(false)
         chatWS.current = undefined
         chatWS.current?.close()
@@ -117,21 +118,6 @@ export default function Chat(props: Props) {
         if (!chatWS.current) {
             createWebsocket()
         }
-        const handleOnline = () => {
-            setIsConnected(true);
-            restartSocketHandler()
-        };
-        const handleOffline = () => {
-            setIsConnected(false);
-            chatWS.current = undefined
-            chatWS.current?.close()
-        };
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
-        return () => {
-            window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline', handleOffline);
-        };
     }, [])
     useEffect(() => {
         const scrollToBottom = () => {
