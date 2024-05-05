@@ -26,7 +26,7 @@ export default function Navbar(props: Props) {
     >
       <div className="min-w-0 flex-1">
         <h2 className="text-2xl font-bold leading-7 text-white sm:truncate sm:text-3xl sm:tracking-tight">
-          Peer Program
+          Pear Program
         </h2>
       </div>
       <div className="mt-4 flex md:ml-4 md:mt-0">
