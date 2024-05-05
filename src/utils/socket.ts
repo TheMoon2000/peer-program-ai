@@ -24,6 +24,7 @@ class Socket {
      */
     connectWebSocket() {
         this.ws = new WebSocket(this.wsUrl);
+        console.log('connectWebSocket()')
         this.init();
     }
     /*

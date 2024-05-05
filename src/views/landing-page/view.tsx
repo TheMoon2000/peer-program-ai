@@ -13,10 +13,9 @@ import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
 import { useBoolean } from "src/hooks/use-boolean";
 import TextField from "@mui/material/TextField";
-import { addUser, addUserToRoom } from "@/actions/userActions";
+import { addUserToRoom } from "@/actions/userActions";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { addRoom } from "@/actions/roomActions";
 import { Loader } from "lucide-react";
 import Hero from "./Hero";
 import Features from "./Features";
@@ -28,6 +27,7 @@ export default function LandingPage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const showTermDialog = useBoolean(false)
   // const rooms = await getRooms();
   // const users = await getUsers();
 
@@ -68,20 +68,20 @@ export default function LandingPage() {
 
   return (
     <>
-      <Hero></Hero>
-      <Features></Features>
+      {/* <Hero></Hero> */}
+      {/* <Features></Features> */}
       <div className="bg-white py-16 sm:py-24">
         <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="relative isolate overflow-hidden bg-gray-900 px-6 py-24 shadow-2xl sm:rounded-3xl sm:px-24 xl:py-32">
             <h2 className="mx-auto max-w-2xl text-center text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Join Peer Programming.
+              Join PearProgram.
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-center text-lg leading-8 text-gray-300">
-              Join us to explore new frontiers in coding and collaboration. Sign
+              Join us to explore new frontiers in collaborative coding. Sign
               up to join a session now.
             </p>
-            <form className="mx-auto mt-10 flex flex-col max-w-md gap-x-4 gap-y-4">
-              <div className="flex max-w-md gap-x-4">
+            <form className="mx-auto mt-10 flex flex-col max-w-lg gap-x-4 gap-y-4">
+              <div className="flex max-w-lg gap-x-4">
                 <label htmlFor="email-address" className="sr-only">
                   Email address
                 </label>
@@ -137,7 +137,7 @@ export default function LandingPage() {
                     Acknowledgement
                   </label>
                   <p id="comments-description" className="text-white">
-                    I understand the terms of service.
+                    I understand the <span onClick={showTermDialog.onTrue} style={{color: "#c6f0ff", fontWeight: 600, cursor: "pointer"}} className="hover:underline">terms of service</span>.
                   </p>
                 </div>
               </div>
@@ -180,9 +180,14 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
-      {/* <h1 className="text-3xl font-bold underline">This is a Landing page.</h1> */}
-      {/* <h1 className="text-2xl font-bold underline">{JSON.stringify(rooms)}</h1>
-      <h1 className="text-2xl font-bold underline">{JSON.stringify(users)}</h1> */}
+      
+      <Dialog open={showTermDialog.value} onClose={showTermDialog.onFalse}>
+        <DialogTitle>Terms of Service</DialogTitle>
+        <DialogContent>PearProgram is a research project affiliated with Stanford University.</DialogContent>
+        <DialogActions>
+          <Button variant="soft" color="primary" onClick={showTermDialog.onFalse}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
