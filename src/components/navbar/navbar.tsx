@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { DyteGrid, DyteMeeting, DytePipToggle } from "@dytesdk/react-ui-kit";
-import { useEffect } from "react";
+import { DyteGrid, DyteMeeting, DyteParticipantTile, DytePipToggle } from "@dytesdk/react-ui-kit";
+import { useCallback, useEffect } from "react";
 
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -9,6 +9,10 @@ import { useBoolean } from "@/hooks/use-boolean";
 import DyteClient from "@dytesdk/web-core";
 import { DyteProvider } from "@dytesdk/react-web-core";
 import { RoomInfo } from "@/Data Structures";
+import { DialogContent, DialogTitle } from "@mui/material";
+import LoadingButton from "@mui/lab/LoadingButton";
+import { axiosInstance } from "@/Constants";
+import { useSnackbar } from "notistack";
 
 interface Props {
   meeting?: DyteClient;
@@ -18,11 +22,38 @@ interface Props {
 
 export default function Navbar(props: Props) {
   const showVideo = useBoolean(false);
+  const showUserRoleDialog = useBoolean(false);
+  const showSwitchRoleDialog = useBoolean(false);
+  const isSwitchingRole = useBoolean(false);
+  const snackbar = useSnackbar()
+
+  const roleName = ["Guest", "Driver", "Navigator"][props.roomInfo.meeting.role]
+  const otherRoleName = ["Guest", "Driver", "Navigator"][(3 - props.roomInfo.meeting.role) % 3]
+
+  const switchRole = useCallback(() => {
+    isSwitchingRole.setValue(true)
+    axiosInstance.post(`/rooms/${props.roomInfo.room.id}/switch-roles`, {
+      email: localStorage.getItem("email"),
+      role: props.roomInfo.meeting.role
+    }).then(response => {
+      showSwitchRoleDialog.setValue(false)
+      snackbar.enqueueSnackbar({
+        message: `You switched your role to ${otherRoleName}.`,
+        variant: "success"
+      })
+      props.roomInfo.meeting.role = response.data.role
+      setTimeout(() => isSwitchingRole.setValue(false), 500)
+    }).catch((err) => {
+      console.warn(err)
+      isSwitchingRole.setValue(false)
+      alert("Failed to switch!")
+    })
+  }, [props.roomInfo])
 
   return (
     <div
       style={{ height: "100px" }}
-      className="bg-gray-800 p-8 md:flex md:items-center md:justify-between"
+      className="bg-gray-800 px-8 md:flex md:items-center md:justify-between"
     >
       <div className="min-w-0">
         <h2 className="text-2xl font-bold leading-7 text-white sm:truncate sm:text-3xl sm:tracking-tight">
@@ -82,19 +113,21 @@ export default function Navbar(props: Props) {
             </button>
           </>
         )}
-        <button
-          type="button"
-          className="ml-3 inline-flex items-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-          onClick={props.onRun}
-        >
-          Run
-        </button>
       </div>
-      <div style={{flexGrow: 1, flexShrink: 1}} />
+      <div style={{flexGrow: 1, flexShrink: 1, height: "100px", position: "relative"}}>
+        {props.meeting && <DyteGrid meeting={props.meeting} style={{ height: "100%" }} />}
+      </div>
       <div className="text-white flex flex-row justify-center items-center gap-x-2">
-        <span>Your Role: <b className="text-sky-100">Navigator</b></span>
-        <button className="text-white text-opacity-90 bg-slate-600 border-none rounded-md hover:bg-slate-500 duration-200 px-2 py-1 cursor-pointer" style={{fontSize: 13}} onClick={() => alert("Sorry this is not yet functional!")}>Switch</button>
+        <span>Your Role: <b className="text-sky-100 hover:underline cursor-pointer" onClick={showUserRoleDialog.onTrue}>{roleName}</b></span>
+        <button className="text-white text-opacity-90 bg-slate-600 border-none rounded-md hover:bg-slate-500 duration-200 px-2 py-1 cursor-pointer" style={{fontSize: 13}} onClick={showSwitchRoleDialog.onTrue}>Switch</button>
       </div>
+      <button
+        type="button"
+        className="ml-3 inline-flex items-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+        onClick={props.onRun}
+      >
+        Run Code
+      </button>
       <Dialog open={showVideo.value} fullScreen>
         {props.meeting ? (
           // <DyteProvider value={props.meeting}>
@@ -119,6 +152,25 @@ export default function Navbar(props: Props) {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {props.roomInfo.meeting.role !== 0 && <Dialog open={showUserRoleDialog.value} onClose={showUserRoleDialog.onFalse} fullWidth maxWidth="sm">
+        <DialogTitle>{`The ${["", "Driver", "Navigator"][props.roomInfo.meeting.role]}`}</DialogTitle>
+        <DialogContent>{props.roomInfo.meeting.role === 1 ? "As the driver, your responsibility involves..." : "As the navigator, your responsibility involves..."}</DialogContent>
+        <DialogActions>
+          <Button variant="soft" color="primary" onClick={showUserRoleDialog.onFalse}>Close</Button>
+        </DialogActions>
+      </Dialog>}
+
+      {
+        props.roomInfo.meeting.role !== 0 && <Dialog open={showSwitchRoleDialog.value} onClose={showSwitchRoleDialog.onFalse} fullWidth maxWidth="sm">
+          <DialogTitle>{"Switch role with your coding partner?"}</DialogTitle>
+          <DialogContent>{`You are currently the ${roleName}. After switching, you will become the ${otherRoleName} and your partner will become the ${roleName}.`}</DialogContent>
+          <DialogActions>
+            <Button variant="outlined" onClick={showSwitchRoleDialog.onFalse}>Cancel</Button>
+            <LoadingButton variant="soft" color="primary" loading={isSwitchingRole.value} onClick={switchRole}>Switch</LoadingButton>
+          </DialogActions>
+        </Dialog>
+      }
     </div>
   );
 }

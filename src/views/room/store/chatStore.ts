@@ -1,6 +1,6 @@
 // src/store/chatStore.ts
 import StoreUtility from '@/utils/store';
-import create from 'zustand';
+import { create } from 'zustand';
 
 export const useChatStore = create<Chatspace.ChatState>((set) => ({
   messages: [],

@@ -62,6 +62,7 @@ export interface RoomInfo {
       participant_id: string;
       name: string;
     }[];
+    role: 0 | 1 | 2;
   };
 }
 

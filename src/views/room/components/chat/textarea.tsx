@@ -1,11 +1,12 @@
 import { TextArea } from '@lobehub/ui';
 import { createStyles } from 'antd-style';
 import { TextAreaRef } from 'antd/es/input/TextArea';
-import { ChangeEvent, memo, useRef, useState } from 'react';
+import { ChangeEvent, memo, useEffect, useRef, useState } from 'react';
 import SendIcon from '@mui/icons-material/Send';
 import { isCommandPressed } from '@/utils/keyboard';
 import LoadingButton from '@mui/lab/LoadingButton';
 import { Flexbox } from 'react-layout-kit';
+import { useBoolean } from '@/hooks/use-boolean';
 const useStyles = createStyles(({ css }) => {
     return {
         textarea: css`
@@ -32,19 +33,30 @@ const email = localStorage.getItem('email')
 const InputArea = memo<InputAreaProps>(({ sendMessage, sendTypingAction, sendCancelTypingAction }) => {
     const { styles } = useStyles();
     const textareaRef = useRef<TextAreaRef>(null);
-    const [message, setMessage] = useState<string>('')
-   
+    const [message, setMessage] = useState("")
+    const isTyping = useBoolean(false)
 
+    useEffect(() => {
+        if (isTyping.value) {
+            sendTypingAction()
+        } else {
+            sendCancelTypingAction()
+        }
+    }, [isTyping])
 
     const handleInputChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
-        setMessage(event.target.value);
+        setMessage(event.target.value)
+        isTyping.setValue(event.target.value.length > 0)
     };
 
-    const handleTypingText = (e) => {
-        sendTypingAction()
+    // 聚焦而且至少打了一个字符，才算在打字
+    const onInputFocused = () => {
+        isTyping.setValue(message.length > 0)
     }
-    const handleCancelTypingText = (e) => {
-        sendCancelTypingAction()
+
+    // 取消聚焦的话，必然会停止打字状态
+    const onInputUnfocused = () => {
+        isTyping.setValue(false)
     }
     return (
         <div className='flex flex-col justify-between h-full '>
@@ -57,26 +69,15 @@ const InputArea = memo<InputAreaProps>(({ sendMessage, sendTypingAction, sendCan
                 <div className={styles.textareaContainer}>
                     <TextArea
                         className={`${styles.textarea} scrollbar`}
-                        onBlur={handleCancelTypingText}
-                        onFocus={handleTypingText}
+                        onBlur={onInputUnfocused}
+                        onFocus={onInputFocused}
                         onChange={handleInputChange}
                         onPressEnter={(e) => {
                             if (e.shiftKey) return;
-                            const send = () => {
-                                e.preventDefault();
-                                sendCancelTypingAction();
-                                textareaRef.current.blur()
-                                sendMessage(message);
-                                setMessage('')
-                            };
-                            const commandKey = isCommandPressed(e);
-                            if (commandKey) {
-                                // wrap
-                                setMessage(message + '\n');
-                                return;
-                            } else {
-                                send()
-                            }
+                            e.preventDefault();
+                            sendCancelTypingAction();
+                            sendMessage(message);
+                            setMessage("")
                         }}
                         placeholder='Please input chat content ...'
                         ref={textareaRef}
@@ -90,8 +91,8 @@ const InputArea = memo<InputAreaProps>(({ sendMessage, sendTypingAction, sendCan
                         endIcon={<SendIcon />}
                         loadingPosition="end"
                         onClick={() => {
-                            sendMessage(message)
-                            setMessage('')
+                            sendMessage(textareaRef.current.resizableTextArea.textArea.value)
+                            textareaRef.current.resizableTextArea.textArea.value = ""
                             textareaRef.current.blur()
                         }}>
                         Send

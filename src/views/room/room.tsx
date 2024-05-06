@@ -58,7 +58,7 @@ import {
 } from "@dytesdk/react-ui-kit";
 import { ChatPlaceholder } from "./chat-placeholder";
 import QuestionsDialog from "@/components/QuestionsDialog";
-import { useSnackbar } from "notistack";
+import { enqueueSnackbar, useSnackbar } from "notistack";
 import { DyteParticipant } from "@dytesdk/web-core";
 
 interface Props {
@@ -96,7 +96,8 @@ export default function Room(props: Props) {
   const snackbar = useSnackbar();
 
   const [meeting, initMeeting] = useDyteClient();
-  const [participant, setParticipant] = useState<DyteParticipant>();
+
+  const [updateState, setUpdateState] = useState(0)
   // const awsTranscribe = useRef<AWSTranscribe>();
 
   // Insertion point color
@@ -562,7 +563,7 @@ export default function Room(props: Props) {
         id: r.data.terminal_id,
         token: roomInfo.current.room.jupyter_server_token,
       });
-      terminalListenerStopper.current.dispose();
+      terminalListenerStopper.current?.dispose();
       initiateTerminalSession(
         r.data.terminal_id,
         roomInfo.current.room.jupyter_server_token,
@@ -606,48 +607,6 @@ export default function Room(props: Props) {
   return (
     <>
       <Stack className="full-screen">
-        <div className="h-[100px] bg-gray-800">
-          {/* <DytePipToggle meeting={meeting} /> */}
-          {meeting && ( // Need to render video out to get main context
-            <>
-              {/* <DyteMeeting
-                // mode="fill"
-                meeting={meeting}
-                style={{ height: "100%" }}
-              /> */}
-              <DyteGrid meeting={meeting} style={{ height: "100%" }} />
-              {/* <DyteProvider value={meeting}> */}
-              {/* <DyteMeeting
-                mode="fill"
-                meeting={meeting}
-                style={{ height: "100%" }}
-                // className="absolute w-0 h-0 overflow-hidden -z-10" // use this to hide the video from view
-              /> */}
-              {/* {console.log("active particpants", meeting.participants.active)} */}
-              {/* <DyteParticipantTile
-                participant={meeting.self}
-                style={{ height: "100%" }}
-                // className="absolute h-[80vh] w-[80vh] "
-              >
-                <DyteNameTag participant={meeting.self}>
-                  <DyteAudioVisualizer slot="start" />
-                </DyteNameTag>
-              </DyteParticipantTile>
-              {participant && (
-                <DyteParticipantTile
-                  participant={participant}
-                  style={{ height: "100%" }}
-                  // className="absolute h-[80vh] w-[80vh] "
-                >
-                  <DyteNameTag participant={participant}>
-                    <DyteAudioVisualizer slot="start" />
-                  </DyteNameTag>
-                </DyteParticipantTile>
-              )} */}
-              {/* </DyteProvider> */}
-            </>
-          )}
-        </div>
         <Navbar
           onRun={runPythonRunCommand}
           meeting={meeting}
@@ -663,6 +622,19 @@ export default function Room(props: Props) {
           <Chat
             roomInfo={roomInfo.current}
             revokeTerminal={refreshTerminalDisplay}
+            onReceiveSystemEvent={(type, e) => {
+              if (type === "update_role") {
+                const email = localStorage.getItem("email")
+                if (email in e.roles) {
+                  roomInfo.current.meeting.role = e.roles[email]
+                  setUpdateState((updateState + 1) % 10000)
+                  enqueueSnackbar({
+                    message: `Your role has been updated to ${["Guest", "Driver", "Navigator"][e.roles[email]]}`,
+                    variant: "info"
+                  })
+                }
+              }
+            }}
           />
           <div>
             <Split
