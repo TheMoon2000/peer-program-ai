@@ -108,8 +108,7 @@ export default function Room(props: Props) {
       terminalId: string,
       token: string,
       showWelcomeString = true,
-      onOpen?: (ws: WebSocket) => void,
-      showReopenButton = true
+      onOpen?: (ws: WebSocket) => void
     ) => {
       ws.current = new WebSocket(
         `wss://${HOST}/notebook/user/${room_id}/terminals/websocket/${terminalId}?token=${token}`
@@ -119,15 +118,19 @@ export default function Room(props: Props) {
           terminal.current.writeln(
             "Welcome to Pear Program's collaborative terminal. Your code is located at main.py. Run `python main.py` to debug it."
           );
-          onOpen?.(ws.current);
+          if (ws.current.readyState === WebSocket.OPEN) {
+            onOpen?.(ws.current);
+          }
         };
       } else if (onOpen) {
         ws.current.onopen = () => {
           onOpen(ws.current);
         };
       }
+      let oldWs = ws.current
       ws.current.onclose = (e) => {
-        if (showReopenButton) {
+        if (ws.current === oldWs) {
+          console.log("same ws session, closing old")
           setTerminalInfo(null);
         }
         stopper.dispose();
@@ -162,7 +165,7 @@ export default function Room(props: Props) {
           ws.current.send(JSON.stringify(["stdin", arg1]));
         }
       });
-      terminalListenerStopper.current = stopper;
+      terminalListenerStopper.current = stopper
     },
     [terminalInfo]
   );
@@ -538,6 +541,7 @@ export default function Room(props: Props) {
     await axiosInstance
       .post(`/rooms/${room_id}/test_results`, {
         test_results: newTestResults,
+        email: localStorage.getItem("email")
       })
       .catch((err) => {
         console.warn(err);
@@ -548,7 +552,8 @@ export default function Room(props: Props) {
 
   const runPythonRunCommand = useCallback(() => {
     axiosInstance.post(`/rooms/${room_id}/create-server`, {
-      email: localStorage.getItem("email")
+      email: localStorage.getItem("email"),
+      show_welcome_message: false
     }).then(async (r) => {
       await axiosInstance
         .post(`/rooms/${room_id}/code`, {
@@ -571,23 +576,24 @@ export default function Room(props: Props) {
         (ws) => {
           ws.send(JSON.stringify(["stdin", "python main.py\n"]));
           terminal.current.focus()
-        },
-        false
+        }
       );
     });
   }, [roomInfo]);
 
   const refreshTerminalDisplay = useCallback(
-    (terminalName: string) => {
+    (terminalName: string, showWelcomeMessage: boolean) => {
       if (roomInfo.current) {
         setTerminalInfo({
           id: terminalName,
           token: roomInfo.current.room.jupyter_server_token,
         });
-        terminalListenerStopper.current.dispose();
+        terminalListenerStopper.current?.dispose();
         initiateTerminalSession(
           terminalName,
-          roomInfo.current.room.jupyter_server_token
+          roomInfo.current.room.jupyter_server_token,
+          showWelcomeMessage,
+          undefined
         );
       }
     },
@@ -621,8 +627,8 @@ export default function Room(props: Props) {
         >
           <Chat
             roomInfo={roomInfo.current}
-            revokeTerminal={refreshTerminalDisplay}
             onReceiveSystemEvent={(type, e) => {
+              console.log('system message', e)
               if (type === "update_role") {
                 const email = localStorage.getItem("email")
                 if (email in e.roles) {
@@ -633,6 +639,14 @@ export default function Room(props: Props) {
                     variant: "info"
                   })
                 }
+              } else if (type === "autograder_update") {
+                setTestResults(e.results)
+                enqueueSnackbar({
+                  message: `Your partner has run the autograder.`,
+                  variant: "info"
+                })
+              } else if (type === "terminal_started") {
+                refreshTerminalDisplay(e.terminal_id, e.show_welcome_message)
               }
             }}
           />
@@ -723,6 +737,7 @@ export default function Room(props: Props) {
                         axiosInstance
                           .post(`/rooms/${room_id}/create-server`, {
                             email: localStorage.getItem("email"),
+                            show_welcome_message: true
                           })
                           .then((r) => {
                             setTerminalInfo({
@@ -768,7 +783,7 @@ export default function Room(props: Props) {
           <LoadingButton
             disabled={isResettingTerminal.value}
             loading={isResettingTerminal.value}
-            variant="contained"
+            variant="soft"
             color="error"
             onClick={() => {
               axiosInstance

@@ -11,13 +11,11 @@ import { HOST } from "@/Constants";
 
 interface Props {
     roomInfo: RoomInfo
-    revokeTerminal: (teminalId: string) => void
     onReceiveSystemEvent: (type: string, data: any) => void
 }
 const email = localStorage.getItem('email')
 /* Lobe Chat integration */
 export default function Chat(props: Props) {
-    const { revokeTerminal } = props
     const [messages, addMessage, setMessage, makeChoice, typingState] = useChatStore((state) => [state.messages, state.addMessage, state.setMessage, state.makeChoice, state.typingState]);
     const chatWS = useRef<WebSocket | undefined>();
     const [isConnected, setIsConnected] = useState<boolean>(true);
@@ -67,8 +65,6 @@ export default function Chat(props: Props) {
                 typingState(responseData)
             } else if (responseData.event === "stop_typing") {
                 typingState(responseData)
-            } else if (responseData.event === "terminal_started") {
-                revokeTerminal(responseData.terminal_id)
             } else if (responseData.sender === "system" && responseData.event) {
                 props.onReceiveSystemEvent(responseData.event, responseData)
             } else {
