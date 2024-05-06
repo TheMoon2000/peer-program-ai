@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -45,15 +46,16 @@ const QuestionsDialog: React.FC<QuestionsDialogProps> = ({
           <div className="grid grid-cols-1 items-center gap-4">
             {questions.length > 0 ? (
               questions.map((question) => (
-                <Button
-                  key={question.question_id}
-                  variant="outline"
-                  onClick={() => handleQuestionChange(question)}
-                >
-                  <div className="flex-1 text-sm text-center py-2">
-                    {question.title}
-                  </div>
-                </Button>
+                <DialogClose asChild key={question.question_id}>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleQuestionChange(question)}
+                  >
+                    <div className="flex-1 text-sm text-center py-2">
+                      {question.title}
+                    </div>
+                  </Button>
+                </DialogClose>
               ))
             ) : (
               <p>No questions available</p>
