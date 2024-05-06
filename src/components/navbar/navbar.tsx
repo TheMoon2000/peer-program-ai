@@ -27,8 +27,8 @@ export default function Navbar(props: Props) {
   const isSwitchingRole = useBoolean(false);
   const snackbar = useSnackbar()
 
-  const roleName = ["Guest", "Driver", "Navigator"][props.roomInfo.meeting.role]
-  const otherRoleName = ["Guest", "Driver", "Navigator"][(3 - props.roomInfo.meeting.role) % 3]
+  const roleName = typeof props.roomInfo.meeting.role === "number" ? ["Unassigned", "Driver", "Navigator"][props.roomInfo.meeting.role] : "Guest"
+  const otherRoleName = ["Guest", "Driver", "Navigator"][(3 - props.roomInfo.meeting.role ?? 0) % 3]
 
   const switchRole = useCallback(() => {
     isSwitchingRole.setValue(true)
@@ -119,7 +119,7 @@ export default function Navbar(props: Props) {
       </div>
       <div className="text-white flex flex-row justify-center items-center gap-x-2">
         <span>Your Role: <b className="text-sky-100 hover:underline cursor-pointer" onClick={showUserRoleDialog.onTrue}>{roleName}</b></span>
-        <button className="text-white text-opacity-90 bg-slate-600 border-none rounded-md hover:bg-slate-500 duration-200 px-2 py-1 cursor-pointer" style={{fontSize: 13}} onClick={showSwitchRoleDialog.onTrue}>Switch</button>
+        {props.roomInfo.meeting.role && <button className={`text-white text-opacity-90 bg-slate-600 border-none rounded-md hover:bg-slate-500 duration-200 px-2 py-1 ${props.roomInfo.meeting.role ? "cursor-pointer" : ""}`} style={{fontSize: 13}} onClick={showSwitchRoleDialog.onTrue}>Switch</button>}
       </div>
       <button
         type="button"
@@ -153,7 +153,7 @@ export default function Navbar(props: Props) {
         </DialogActions>
       </Dialog>
 
-      {props.roomInfo.meeting.role !== 0 && <Dialog open={showUserRoleDialog.value} onClose={showUserRoleDialog.onFalse} fullWidth maxWidth="sm">
+      {props.roomInfo.meeting.role && <Dialog open={showUserRoleDialog.value} onClose={showUserRoleDialog.onFalse} fullWidth maxWidth="sm">
         <DialogTitle>{`The ${["", "Driver", "Navigator"][props.roomInfo.meeting.role]}`}</DialogTitle>
         <DialogContent>{props.roomInfo.meeting.role === 1 ? "As the driver, your responsibility involves..." : "As the navigator, your responsibility involves..."}</DialogContent>
         <DialogActions>
@@ -162,7 +162,7 @@ export default function Navbar(props: Props) {
       </Dialog>}
 
       {
-        props.roomInfo.meeting.role !== 0 && <Dialog open={showSwitchRoleDialog.value} onClose={showSwitchRoleDialog.onFalse} fullWidth maxWidth="sm">
+        props.roomInfo.meeting.role && <Dialog open={showSwitchRoleDialog.value} onClose={showSwitchRoleDialog.onFalse} fullWidth maxWidth="sm">
           <DialogTitle>{"Switch role with your coding partner?"}</DialogTitle>
           <DialogContent>{`You are currently the ${roleName}. After switching, you will become the ${otherRoleName} and your partner will become the ${roleName}.`}</DialogContent>
           <DialogActions>

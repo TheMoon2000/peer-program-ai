@@ -113,6 +113,7 @@ export default function Room(props: Props) {
       ws.current = new WebSocket(
         `wss://${HOST}/notebook/user/${room_id}/terminals/websocket/${terminalId}?token=${token}`
       );
+      console.log("opened new terminal connection", ws.current)
       if (showWelcomeString) {
         ws.current.onopen = (e) => {
           terminal.current.writeln(
