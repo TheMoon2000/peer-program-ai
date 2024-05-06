@@ -83,6 +83,8 @@ export default function Room(props: Props) {
   const terminalListenerStopper = useRef<IDisposable>();
   const fitAddOn = useRef<FitAddon>(new FitAddon());
   const pyodideRef = useRef<PyodideInterface | undefined>();
+  const canvasRef = useRef(null);
+
   const ws = useRef<WebSocket | undefined>();
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | undefined>();
   const authorEditor = useRef<monaco.editor.ICodeEditor | undefined>();
@@ -468,6 +470,17 @@ export default function Room(props: Props) {
       return;
     }
 
+    // Create a canvas element
+    const sdl2Canvas = canvasRef.current;
+    sdl2Canvas.id = "canvas";
+
+    // Set the canvas for Pyodide (assuming pyodide has a function to set canvas, adjust as necessary)
+    pyodide.canvas.setCanvas2D(sdl2Canvas);
+    // let sdl2Canvas = document.createElement("canvas");
+    // sdl2Canvas.id = "canvas";
+
+    // pyodide.canvas.setCanvas2D(sdl2Canvas);
+
     setTestResults(undefined);
     isRunningTests.setValue(true);
 
@@ -546,34 +559,36 @@ export default function Room(props: Props) {
   };
 
   const runPythonRunCommand = useCallback(() => {
-    axiosInstance.post(`/rooms/${room_id}/create-server`, {
-      email: localStorage.getItem("email")
-    }).then(async (r) => {
-      await axiosInstance
-        .post(`/rooms/${room_id}/code`, {
-          file: editor.current.getValue(),
-          author_map: authorEditor.current.getValue(),
-        })
-        .catch((err) => {
-          console.warn(err);
+    axiosInstance
+      .post(`/rooms/${room_id}/create-server`, {
+        email: localStorage.getItem("email"),
+      })
+      .then(async (r) => {
+        await axiosInstance
+          .post(`/rooms/${room_id}/code`, {
+            file: editor.current.getValue(),
+            author_map: authorEditor.current.getValue(),
+          })
+          .catch((err) => {
+            console.warn(err);
+          });
+
+        setTerminalInfo({
+          id: r.data.terminal_id,
+          token: roomInfo.current.room.jupyter_server_token,
         });
-      
-      setTerminalInfo({
-        id: r.data.terminal_id,
-        token: roomInfo.current.room.jupyter_server_token,
+        terminalListenerStopper.current.dispose();
+        initiateTerminalSession(
+          r.data.terminal_id,
+          roomInfo.current.room.jupyter_server_token,
+          false,
+          (ws) => {
+            ws.send(JSON.stringify(["stdin", "python main.py\n"]));
+            terminal.current.focus();
+          },
+          false
+        );
       });
-      terminalListenerStopper.current.dispose();
-      initiateTerminalSession(
-        r.data.terminal_id,
-        roomInfo.current.room.jupyter_server_token,
-        false,
-        (ws) => {
-          ws.send(JSON.stringify(["stdin", "python main.py\n"]));
-          terminal.current.focus()
-        },
-        false
-      );
-    });
   }, [roomInfo]);
 
   const refreshTerminalDisplay = useCallback(
@@ -719,6 +734,7 @@ export default function Room(props: Props) {
                       questions={questions}
                       handleQuestionChange={handleQuestionChange}
                     />
+                    <canvas ref={canvasRef}></canvas>
                   </Box>
                 </Split>
               </div>
