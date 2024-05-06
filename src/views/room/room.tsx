@@ -107,7 +107,8 @@ export default function Room(props: Props) {
       terminalId: string,
       token: string,
       showWelcomeString = true,
-      onOpen?: (ws: WebSocket) => void
+      onOpen?: (ws: WebSocket) => void,
+      showReopenButton = true
     ) => {
       ws.current = new WebSocket(
         `wss://${HOST}/notebook/user/${room_id}/terminals/websocket/${terminalId}?token=${token}`
@@ -125,7 +126,9 @@ export default function Room(props: Props) {
         };
       }
       ws.current.onclose = (e) => {
-        setTerminalInfo(null);
+        if (showReopenButton) {
+          setTerminalInfo(null);
+        }
         stopper.dispose();
         terminal.current.blur();
         terminal.current.dispose();
@@ -543,27 +546,34 @@ export default function Room(props: Props) {
   };
 
   const runPythonRunCommand = useCallback(() => {
-    axiosInstance
-      .post(`/rooms/${room_id}/create-server`, {
-        email: localStorage.getItem("email"),
-      })
-      .then((r) => {
-        console.log(r);
-        setTerminalInfo({
-          id: r.data.terminal_id,
-          token: roomInfo.current.room.jupyter_server_token,
+    axiosInstance.post(`/rooms/${room_id}/create-server`, {
+      email: localStorage.getItem("email")
+    }).then(async (r) => {
+      await axiosInstance
+        .post(`/rooms/${room_id}/code`, {
+          file: editor.current.getValue(),
+          author_map: authorEditor.current.getValue(),
+        })
+        .catch((err) => {
+          console.warn(err);
         });
-        terminalListenerStopper.current.dispose();
-        initiateTerminalSession(
-          r.data.terminal_id,
-          roomInfo.current.room.jupyter_server_token,
-          false,
-          (ws) => {
-            ws.send(JSON.stringify(["stdin", "python main.py\n"]));
-            terminal.current.focus();
-          }
-        );
+      
+      setTerminalInfo({
+        id: r.data.terminal_id,
+        token: roomInfo.current.room.jupyter_server_token,
       });
+      terminalListenerStopper.current.dispose();
+      initiateTerminalSession(
+        r.data.terminal_id,
+        roomInfo.current.room.jupyter_server_token,
+        false,
+        (ws) => {
+          ws.send(JSON.stringify(["stdin", "python main.py\n"]));
+          terminal.current.focus()
+        },
+        false
+      );
+    });
   }, [roomInfo]);
 
   const refreshTerminalDisplay = useCallback(
@@ -584,7 +594,7 @@ export default function Room(props: Props) {
   );
 
   if (!isPageLoaded.value) {
-    return <Loading text={"Please wait as we assign you a room."} />;
+    return <Loading text={"Loading room..."} />;
   } else if (!roomInfo.current) {
     return (
       <div className="w-full h-full flex justify-center items-center">

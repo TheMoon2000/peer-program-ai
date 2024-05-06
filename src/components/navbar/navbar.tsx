@@ -22,13 +22,14 @@ export default function Navbar(props: Props) {
   return (
     <div
       style={{ height: "100px" }}
-      className="bg-gray-800 p-8 md:flex md:items-center md:justify-between absolute"
+      className="bg-gray-800 p-8 md:flex md:items-center md:justify-between"
     >
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0">
         <h2 className="text-2xl font-bold leading-7 text-white sm:truncate sm:text-3xl sm:tracking-tight">
           Pear Program
         </h2>
       </div>
+      
       <div className="mt-4 flex md:ml-4 md:mt-0">
         {/* <Link
             href={"/"}
@@ -88,6 +89,11 @@ export default function Navbar(props: Props) {
         >
           Run
         </button>
+      </div>
+      <div style={{flexGrow: 1, flexShrink: 1}} />
+      <div className="text-white flex flex-row justify-center items-center gap-x-2">
+        <span>Your Role: <b className="text-sky-100">Navigator</b></span>
+        <button className="text-white text-opacity-90 bg-slate-600 border-none rounded-md hover:bg-slate-500 duration-200 px-2 py-1 cursor-pointer" style={{fontSize: 13}} onClick={() => alert("Sorry this is not yet functional!")}>Switch</button>
       </div>
       <Dialog open={showVideo.value} fullScreen>
         {props.meeting ? (
