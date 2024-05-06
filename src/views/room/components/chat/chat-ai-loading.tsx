@@ -16,9 +16,9 @@ const ChatAILoading = (detailContent: IChatAIProps) => {
             </div>
             <div className="flex flex-col items-start">
                 <div className="max-w-12">
-                    <Typography variant="caption" display="block" className='text-gray-600 pl-1'>
+                    {/* <Typography variant="caption" display="block" className='text-gray-600 pl-1'>
                         {name}
-                    </Typography>
+                    </Typography> */}
                     <div className="bg-customBGColor02 rounded-lg p-2 text-black">
                         <BubblesLoading />
                     </div>
