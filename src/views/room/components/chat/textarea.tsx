@@ -33,9 +33,13 @@ const InputArea = memo<InputAreaProps>(({ sendMessage, sendTypingAction, sendCan
     const { styles } = useStyles();
     const textareaRef = useRef<TextAreaRef>(null);
     const [message, setMessage] = useState<string>('')
+   
+
+
     const handleInputChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
         setMessage(event.target.value);
     };
+
     const handleTypingText = (e) => {
         sendTypingAction()
     }
@@ -60,6 +64,8 @@ const InputArea = memo<InputAreaProps>(({ sendMessage, sendTypingAction, sendCan
                             if (e.shiftKey) return;
                             const send = () => {
                                 e.preventDefault();
+                                sendCancelTypingAction();
+                                textareaRef.current.blur()
                                 sendMessage(message);
                                 setMessage('')
                             };
@@ -86,13 +92,14 @@ const InputArea = memo<InputAreaProps>(({ sendMessage, sendTypingAction, sendCan
                         onClick={() => {
                             sendMessage(message)
                             setMessage('')
+                            textareaRef.current.blur()
                         }}>
                         Send
                     </LoadingButton>
                 </div>
-            </Flexbox>
+            </Flexbox >
 
-        </div>
+        </div >
     );
 });
 
