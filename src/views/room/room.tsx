@@ -28,6 +28,7 @@ import {
   DyteProvider,
   useDyteClient,
   useDyteMeeting,
+  useDyteSelector,
 } from "@dytesdk/react-web-core";
 
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
@@ -46,10 +47,19 @@ import { HOST, axiosInstance, rustpadInstance } from "@/Constants";
 import { Question, RoomInfo, TestResult } from "@/Data Structures";
 import TestCases from "../grading/test-cases";
 import Loading from "../loading/loading";
-import { DyteChat, DyteMeeting, DytePipToggle } from "@dytesdk/react-ui-kit";
+import {
+  DyteAudioVisualizer,
+  DyteChat,
+  DyteGrid,
+  DyteMeeting,
+  DyteNameTag,
+  DyteParticipantTile,
+  DytePipToggle,
+} from "@dytesdk/react-ui-kit";
 import { ChatPlaceholder } from "./chat-placeholder";
 import QuestionsDialog from "@/components/QuestionsDialog";
 import { useSnackbar } from "notistack";
+import { DyteParticipant } from "@dytesdk/web-core";
 
 interface Props {
   roomId: string;
@@ -83,9 +93,10 @@ export default function Room(props: Props) {
   const isRunningTests = useBoolean(false);
   const showResetTerminalDialog = useBoolean(false);
   const [questions, setQuestions] = useState<Question[]>();
-  const snackbar = useSnackbar()
+  const snackbar = useSnackbar();
 
   const [meeting, initMeeting] = useDyteClient();
+  const [participant, setParticipant] = useState<DyteParticipant>();
   // const awsTranscribe = useRef<AWSTranscribe>();
 
   // Insertion point color
@@ -219,10 +230,12 @@ export default function Room(props: Props) {
 
     // Required to maintain active session
     setInterval(() => {
-      axiosInstance.post(`/rooms/${roomInfo.current.room.id}/heartbeat`).catch(err => {
-        console.warn(err)
-      })
-    }, 20000)
+      axiosInstance
+        .post(`/rooms/${roomInfo.current.room.id}/heartbeat`)
+        .catch((err) => {
+          console.warn(err);
+        });
+    }, 20000);
 
     // return () => {
     //   rustpad.current?.dispose();
@@ -335,12 +348,32 @@ export default function Room(props: Props) {
 
   useEffect(() => {
     if (meeting) {
-      console.log("logging meeting", meeting.participants);
-      meeting.participants.pip.init({
-        // width: 360,
-        // height: 360,
-      });
-      console.log("logging meeting", meeting.participants);
+      // console.log("logging meeting", meeting.participants.active.toArray());
+      // // const activeParticipants = useDyteSelector(meeting.participants.active);
+      // meeting.participants.active.on("participantJoined", (participant) => {
+      //   console.log(
+      //     "logging meeting participants",
+      //     meeting.participants.active.toArray()
+      //   );
+      //   console.log("participant type", typeof participant);
+      //   console.log(`Participant ${participant.name} joined`);
+      //   console.log(`Participant video track: ${participant.videoTrack}`);
+      //   setParticipant(participant);
+      //   console.log("participant details", participant);
+      // });
+      // // const participant1 = meeting.participants.active.get(participantId);
+      // console.log(
+      //   "active particpants",
+      //   // activeParticipants,
+      //   meeting.participants.active
+      // );
+      // console.log("self particpants", meeting.self);
+      // // console.log("pip supported?", meeting.participants.pip.isSupported());
+      // meeting.participants.pip.init({
+      //   // width: 360,
+      //   // height: 360,
+      // });
+      // console.log("logging meeting", meeting.participants);
       /*
       awsTranscribe.current = new DyteAWSTranscribe({
         meeting,
@@ -395,23 +428,27 @@ export default function Room(props: Props) {
 
   // change question
   const handleQuestionChange = async (question: Question) => {
-    const response = await axiosInstance.patch(`/rooms/${room_id}/`, {
+    const response = await axiosInstance
+      .patch(`/rooms/${room_id}/`, {
         question_id: question.question_id,
         name: localStorage.getItem("name"),
-      }).catch((err) => console.error(err));
+      })
+      .catch((err) => console.error(err));
 
     if (!!response && !!response.data) {
       roomInfo.current.room.question_id = response.data.question_id;
       roomInfo.current.room.test_cases = response.data.test_cases;
       editor.current.getModel().setValue(response.data.starter_code);
-      authorEditor.current.setValue(response.data.starter_code.replace(/[^\n]/g, "?"));
+      authorEditor.current.setValue(
+        response.data.starter_code.replace(/[^\n]/g, "?")
+      );
       setTestResults(null);
-      
     } else {
       snackbar.enqueueSnackbar({
-        message: "Unable to switch question. Please check your internet connection.",
-        variant: "warning"
-      })
+        message:
+          "Unable to switch question. Please check your internet connection.",
+        variant: "warning",
+      });
     }
     // TODO: What are these additional attributes for?
     // title
@@ -494,47 +531,60 @@ export default function Room(props: Props) {
 
     console.log("test results", newTestResults);
 
-    await axiosInstance.post(`/rooms/${room_id}/test_results`, {
-      test_results: newTestResults,
-    }).catch(err => {
-      console.warn(err)
-    });
+    await axiosInstance
+      .post(`/rooms/${room_id}/test_results`, {
+        test_results: newTestResults,
+      })
+      .catch((err) => {
+        console.warn(err);
+      });
     isRunningTests.setValue(false);
     setTestResults(newTestResults);
   };
 
   const runPythonRunCommand = useCallback(() => {
-    axiosInstance.post(`/rooms/${room_id}/create-server`, {
-      email: localStorage.getItem("email")
-    }).then((r) => {
-      console.log(r)
-      setTerminalInfo({
-        id: r.data.terminal_id,
-        token: roomInfo.current.room.jupyter_server_token,
+    axiosInstance
+      .post(`/rooms/${room_id}/create-server`, {
+        email: localStorage.getItem("email"),
+      })
+      .then((r) => {
+        console.log(r);
+        setTerminalInfo({
+          id: r.data.terminal_id,
+          token: roomInfo.current.room.jupyter_server_token,
+        });
+        terminalListenerStopper.current.dispose();
+        initiateTerminalSession(
+          r.data.terminal_id,
+          roomInfo.current.room.jupyter_server_token,
+          false,
+          (ws) => {
+            ws.send(JSON.stringify(["stdin", "python main.py\n"]));
+            terminal.current.focus();
+          }
+        );
       });
-      terminalListenerStopper.current.dispose();
-      initiateTerminalSession(
-        r.data.terminal_id,
-        roomInfo.current.room.jupyter_server_token,
-        false,
-        (ws) => {
-          ws.send(JSON.stringify(["stdin", "python main.py\n"]));
-          terminal.current.focus()
-        }
-      );
-    });
   }, [roomInfo]);
 
-  const refreshTerminalDisplay = useCallback((terminalName: string) => {
-    if (roomInfo.current) {
-      setTerminalInfo({ id: terminalName, token: roomInfo.current.room.jupyter_server_token })
-      terminalListenerStopper.current.dispose()
-      initiateTerminalSession(terminalName, roomInfo.current.room.jupyter_server_token)
-    }
-  }, [setTerminalInfo, initiateTerminalSession])
+  const refreshTerminalDisplay = useCallback(
+    (terminalName: string) => {
+      if (roomInfo.current) {
+        setTerminalInfo({
+          id: terminalName,
+          token: roomInfo.current.room.jupyter_server_token,
+        });
+        terminalListenerStopper.current.dispose();
+        initiateTerminalSession(
+          terminalName,
+          roomInfo.current.room.jupyter_server_token
+        );
+      }
+    },
+    [setTerminalInfo, initiateTerminalSession]
+  );
 
   if (!isPageLoaded.value) {
-    return <Loading />;
+    return <Loading text={"Please wait as we assign you a room."} />;
   } else if (!roomInfo.current) {
     return (
       <div className="w-full h-full flex justify-center items-center">
@@ -546,20 +596,48 @@ export default function Room(props: Props) {
   return (
     <>
       <Stack className="full-screen">
-        {/* <DytePipToggle meeting={meeting} /> */}
-
-        {meeting && ( // Need to render video out to get main context
-          <>
-            {/* <DyteProvider value={meeting}> */}
-            <DyteMeeting
-              mode="fill"
-              meeting={meeting}
-              style={{ height: "100%" }}
-              className="absolute w-0 h-0 overflow-hidden -z-10" // use this to hide the video from view
-            />
-            {/* </DyteProvider> */}
-          </>
-        )}
+        <div className="h-[100px] bg-gray-800">
+          {/* <DytePipToggle meeting={meeting} /> */}
+          {meeting && ( // Need to render video out to get main context
+            <>
+              {/* <DyteMeeting
+                // mode="fill"
+                meeting={meeting}
+                style={{ height: "100%" }}
+              /> */}
+              <DyteGrid meeting={meeting} style={{ height: "100%" }} />
+              {/* <DyteProvider value={meeting}> */}
+              {/* <DyteMeeting
+                mode="fill"
+                meeting={meeting}
+                style={{ height: "100%" }}
+                // className="absolute w-0 h-0 overflow-hidden -z-10" // use this to hide the video from view
+              /> */}
+              {/* {console.log("active particpants", meeting.participants.active)} */}
+              {/* <DyteParticipantTile
+                participant={meeting.self}
+                style={{ height: "100%" }}
+                // className="absolute h-[80vh] w-[80vh] "
+              >
+                <DyteNameTag participant={meeting.self}>
+                  <DyteAudioVisualizer slot="start" />
+                </DyteNameTag>
+              </DyteParticipantTile>
+              {participant && (
+                <DyteParticipantTile
+                  participant={participant}
+                  style={{ height: "100%" }}
+                  // className="absolute h-[80vh] w-[80vh] "
+                >
+                  <DyteNameTag participant={participant}>
+                    <DyteAudioVisualizer slot="start" />
+                  </DyteNameTag>
+                </DyteParticipantTile>
+              )} */}
+              {/* </DyteProvider> */}
+            </>
+          )}
+        </div>
         <Navbar
           onRun={runPythonRunCommand}
           meeting={meeting}
@@ -572,8 +650,10 @@ export default function Room(props: Props) {
           gutterSize={6}
           style={{ flexGrow: 1, maxHeight: "calc(100vh - 100px)" }}
         >
-         
-          <Chat roomInfo={roomInfo.current} revokeTerminal={refreshTerminalDisplay} />
+          <Chat
+            roomInfo={roomInfo.current}
+            revokeTerminal={refreshTerminalDisplay}
+          />
           <div>
             <Split
               className="right-split"
@@ -586,9 +666,6 @@ export default function Room(props: Props) {
                 editor.current?.layout();
               }}
             >
-              {/* <Split className="split" direction="horizontal" sizes={[50, 50]}>
-                      
-                    </Split> */}
               <div>
                 <Split
                   className="code-split"
@@ -621,7 +698,7 @@ export default function Room(props: Props) {
                   </div>
                   {/* <Grading editor={editor.current} /> */}
                   {/* <div id="author-editor" className="relative" /> */}
-                  <Box sx={{overflowY: "auto"}}>
+                  <Box sx={{ overflowY: "auto" }}>
                     <TestCases
                       onRun={runCode}
                       cases={roomInfo.current?.room.test_cases}
@@ -713,7 +790,9 @@ export default function Room(props: Props) {
             color="error"
             onClick={() => {
               axiosInstance
-                .post(`/rooms/${room_id}/restart-server`, { email: localStorage.getItem("email") })
+                .post(`/rooms/${room_id}/restart-server`, {
+                  email: localStorage.getItem("email"),
+                })
                 .then((r) => {
                   setTerminalInfo({
                     id: r.data.terminal.name,

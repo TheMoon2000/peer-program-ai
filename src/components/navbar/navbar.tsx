@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { DyteMeeting, DytePipToggle } from "@dytesdk/react-ui-kit";
+import { DyteGrid, DyteMeeting, DytePipToggle } from "@dytesdk/react-ui-kit";
 import { useEffect } from "react";
 
 import Dialog from "@mui/material/Dialog";
@@ -22,7 +22,7 @@ export default function Navbar(props: Props) {
   return (
     <div
       style={{ height: "100px" }}
-      className="bg-gray-800 p-8 md:flex md:items-center md:justify-between"
+      className="bg-gray-800 p-8 md:flex md:items-center md:justify-between absolute"
     >
       <div className="min-w-0 flex-1">
         <h2 className="text-2xl font-bold leading-7 text-white sm:truncate sm:text-3xl sm:tracking-tight">
@@ -56,36 +56,63 @@ export default function Navbar(props: Props) {
             className="inline-block h-10 w-10 rounded-full ring-2 ring-white"
             src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2.25&w=256&h=256&q=80"
             alt=""
-          />
-          <img
+            />
+            <img
             className="inline-block h-10 w-10 rounded-full ring-2 ring-white"
             src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
             alt=""
           /> */}
         </div>
         {props.meeting && (
-          <button
-            type="button"
-            className="ml-3 inline-flex items-center rounded-md bg-zinc-50 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
-            onClick={() => props.meeting.participants.pip.enable()}
-            // disabled={!!props.meeting.participants}
-            // onClick={showVideo.onTrue}
-          >
-            Show Video
-            {/* <DytePipToggle
+          <>
+            {/* <DyteGrid meeting={props.meeting} style={{ height: "100%" }} /> */}
+            <button
+              type="button"
+              className="ml-3 inline-flex items-center rounded-md bg-zinc-50 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
+              // onClick={() => props.meeting.participants.pip.enable()}
+              // disabled={!!props.meeting.participants}
+              onClick={showVideo.onTrue}
+            >
+              Expand Video
+              {/* <DytePipToggle
             meeting={props.meeting}
             className="ml-3 inline-flex items-center rounded-md bg-zinc-50 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
           /> */}
-          </button>
+            </button>
+          </>
         )}
         <button
-            type="button"
-            className="ml-3 inline-flex items-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-            onClick={props.onRun}
-          >
-            Run
-          </button>
+          type="button"
+          className="ml-3 inline-flex items-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+          onClick={props.onRun}
+        >
+          Run
+        </button>
       </div>
+      <Dialog open={showVideo.value} fullScreen>
+        {props.meeting ? (
+          // <DyteProvider value={props.meeting}>
+          <>
+            <DyteMeeting
+              mode="fill"
+              meeting={props.meeting}
+              style={{ height: "100%" }}
+              // className="absolute w-0 h-0 overflow-hidden -z-10"
+            />
+            {/* <DytePipToggle meeting={props.meeting} /> */}
+          </>
+        ) : (
+          // </DyteProvider>
+          <div className="flex-grow flex justify-center items-center">
+            Visitors cannot join video call.
+          </div>
+        )}
+        <DialogActions sx={{ justifyContent: "center" }}>
+          <Button variant="outlined" onClick={showVideo.onFalse}>
+            Hide
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }
