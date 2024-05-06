@@ -506,8 +506,16 @@ export default function Room(props: Props) {
   const runPythonRunCommand = useCallback(() => {
     axiosInstance.post(`/rooms/${room_id}/create-server`, {
       email: localStorage.getItem("email")
-    }).then((r) => {
-      console.log(r)
+    }).then(async (r) => {
+      await axiosInstance
+        .post(`/rooms/${room_id}/code`, {
+          file: editor.current.getValue(),
+          author_map: authorEditor.current.getValue(),
+        })
+        .catch((err) => {
+          console.warn(err);
+        });
+      
       setTerminalInfo({
         id: r.data.terminal_id,
         token: roomInfo.current.room.jupyter_server_token,
