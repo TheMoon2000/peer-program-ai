@@ -504,18 +504,22 @@ export default function Room(props: Props) {
   };
 
   const runPythonRunCommand = useCallback(() => {
-    axiosInstance.post(`/rooms/${room_id}/restart-server`).then((r) => {
+    axiosInstance.post(`/rooms/${room_id}/create-server`, {
+      email: localStorage.getItem("email")
+    }).then((r) => {
+      console.log(r)
       setTerminalInfo({
-        id: r.data.terminal.name,
+        id: r.data.terminal_id,
         token: roomInfo.current.room.jupyter_server_token,
       });
       terminalListenerStopper.current.dispose();
       initiateTerminalSession(
-        r.data.terminal.name,
+        r.data.terminal_id,
         roomInfo.current.room.jupyter_server_token,
         false,
         (ws) => {
           ws.send(JSON.stringify(["stdin", "python main.py\n"]));
+          terminal.current.focus()
         }
       );
     });
@@ -709,7 +713,7 @@ export default function Room(props: Props) {
             color="error"
             onClick={() => {
               axiosInstance
-                .post(`/rooms/${room_id}/restart-server`)
+                .post(`/rooms/${room_id}/restart-server`, { email: localStorage.getItem("email") })
                 .then((r) => {
                   setTerminalInfo({
                     id: r.data.terminal.name,
