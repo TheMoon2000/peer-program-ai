@@ -7,6 +7,7 @@ import LoadingButton from "@mui/lab/LoadingButton";
 import "./test-cases.css";
 
 interface Props {
+  useGraphics?: boolean
   cases?: TestCase[] | null;
   results?: TestResult[] | null;
   isWaiting: boolean
@@ -19,6 +20,7 @@ export default function TestCases(props: Props) {
       {props.cases && <div className="py-2">
         <LoadingButton loading={props.isWaiting} variant="outlined" onClick={props.onRun}>Check Correct</LoadingButton>
       </div>}
+      {props.useGraphics && <canvas id="canvas" width="390px" height="260px" style={{backgroundColor: "white", border: "1px solid gray", width: "100%"}} />}
       <div className="flex-col gap-1 items-stretch">
         {props.results === undefined && <div className="text-center py-4 gray">Loading...</div>}
         {props.results && props.cases?.map((testCase, caseIndex) => {

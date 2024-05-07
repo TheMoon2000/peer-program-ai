@@ -44,6 +44,7 @@ export interface RoomInfo {
     is_full: boolean;
     question_id: string | null;
     test_cases: TestCase[] | null;
+    use_graphics: boolean;
     test_results: TestResult[] | null;
     jupyter_server_token: string;
   };

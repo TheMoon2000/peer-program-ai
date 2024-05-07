@@ -194,7 +194,9 @@ export default function Room(props: Props) {
 
     loadPyodide({
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/",
-    }).then((p) => (pyodideRef.current = p));
+    }).then((p) => {
+      pyodideRef.current = p
+    });
 
     Promise.all([
       axiosInstance.get(`/rooms/${room_id}?email=${userEmail}`),
@@ -473,6 +475,8 @@ export default function Room(props: Props) {
       return;
     }
 
+    pyodide.canvas.setCanvas2D(document.querySelector("#canvas") as HTMLCanvasElement)
+
     setTestResults(undefined);
     isRunningTests.setValue(true);
 
@@ -697,6 +701,7 @@ export default function Room(props: Props) {
                   {/* <div id="author-editor" className="relative" /> */}
                   <Box sx={{ overflowY: "auto" }}>
                     <TestCases
+                      useGraphics={roomInfo.current.room.use_graphics}
                       onRun={runCode}
                       cases={roomInfo.current?.room.test_cases}
                       results={testResults}
