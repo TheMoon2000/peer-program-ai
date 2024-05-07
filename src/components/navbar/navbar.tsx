@@ -153,7 +153,7 @@ export default function Navbar(props: Props) {
         </DialogActions>
       </Dialog>
 
-      {props.roomInfo.meeting.role && <Dialog open={showUserRoleDialog.value} onClose={showUserRoleDialog.onFalse} fullWidth maxWidth="sm">
+      {!!props.roomInfo.meeting.role && <Dialog open={showUserRoleDialog.value} onClose={showUserRoleDialog.onFalse} fullWidth maxWidth="sm">
         <DialogTitle>{`The ${["", "Driver", "Navigator"][props.roomInfo.meeting.role]}`}</DialogTitle>
         <DialogContent>{props.roomInfo.meeting.role === 1 ? "As the driver, your responsibility involves..." : "As the navigator, your responsibility involves..."}</DialogContent>
         <DialogActions>
@@ -162,7 +162,7 @@ export default function Navbar(props: Props) {
       </Dialog>}
 
       {
-        props.roomInfo.meeting.role && <Dialog open={showSwitchRoleDialog.value} onClose={showSwitchRoleDialog.onFalse} fullWidth maxWidth="sm">
+        !!props.roomInfo.meeting.role && <Dialog open={showSwitchRoleDialog.value} onClose={showSwitchRoleDialog.onFalse} fullWidth maxWidth="sm">
           <DialogTitle>{"Switch role with your coding partner?"}</DialogTitle>
           <DialogContent>{`You are currently the ${roleName}. After switching, you will become the ${otherRoleName} and your partner will become the ${roleName}.`}</DialogContent>
           <DialogActions>

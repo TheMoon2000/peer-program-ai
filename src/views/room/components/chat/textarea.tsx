@@ -42,7 +42,7 @@ const InputArea = memo<InputAreaProps>(({ sendMessage, sendTypingAction, sendCan
         } else {
             sendCancelTypingAction()
         }
-    }, [isTyping])
+    }, [isTyping.value])
 
     const handleInputChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
         setMessage(event.target.value)

@@ -155,7 +155,7 @@ export default function Chat(props: Props) {
                                 <>
                                     {/* {(item.event && item.event.trim() == 'start_typing') && <ChatAILoading name={item.name} />} */}
                                     {(item.sender !== 'system' && item.event == 'start_typing') && <ChatAILoading name={item.name} />}
-                                    {Array.isArray(item.content) && <ChatAI messageId={i} handleChooseAction={handleSendOption} content={item.content} name={item.name} />}
+                                    {Array.isArray(item.content) && <ChatAI messageId={item.message_id} handleChooseAction={handleSendOption} content={item.content} name={item.name} />}
                                 </>
                                 :
                                 <>
@@ -172,7 +172,7 @@ export default function Chat(props: Props) {
                     {/* Anonymous User */}
                     {email === null && messages.map((item, i) => (
                         <div key={i}>
-                            {Array.isArray(item.content) && <ChatAI messageId={i} handleChooseAction={handleSendOption} content={item.content} name={item.name} />}
+                            {Array.isArray(item.content) && <ChatAI messageId={item.message_id} handleChooseAction={handleSendOption} content={item.content} name={item.name} />}
                             {item.sender === 'system' && (
                                 <p className="flex justify-center items-center my-1">
                                     <span className="text-neutral-500 text-xs">{item.system_message}</span>
