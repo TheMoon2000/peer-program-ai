@@ -17,7 +17,7 @@ interface Props {
 export default function TestCases(props: Props) {
   return (
     <div className="px-4 relative test-case-container overflow-y-visible bg-white">
-      {props.useGraphics && <canvas id="canvas" width="390px" height="260px" style={{backgroundColor: "white", border: "1px solid gray", width: "100%"}} />}
+      <canvas id="canvas" width="390px" height="260px" style={{backgroundColor: "white", border: "1px solid gray", width: "100%", display: props.useGraphics ? "block" : "none"}} />
       {props.cases && (
         <div className="py-2">
           <LoadingButton

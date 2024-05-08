@@ -7,13 +7,19 @@ export const useChatStore = create<Chatspace.ChatState>((set) => ({
   addMessage: (message) => set((state) => ({ messages: [...state.messages, ...message] })),
   setMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
   makeChoice: (message) => set((state) => {
-    state.messages[message.message_id].content[message.content_index].choice_index = message.choice_index
+    for (const msg of state.messages) {
+      if (msg.message_id === message.message_id) {
+        msg.content[message.content_index].choice_index = message.choice_index
+        break
+      }
+    }
     return {
       messages: [...state.messages]
     }
   }),
   typingState: (message) => set((state) => {
     if (message.event === 'start_typing') {
+      console.log('start_typing', message)
       let existTyping: boolean = false
       for (let index = 0; index < state.messages.length; index++) {
         const element = state.messages[index];

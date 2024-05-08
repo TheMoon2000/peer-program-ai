@@ -117,10 +117,10 @@ export default function Navbar(props: Props) {
       <div style={{flexGrow: 1, flexShrink: 1, height: "100px", position: "relative"}}>
         {props.meeting && <DyteGrid meeting={props.meeting} style={{ height: "100%" }} />}
       </div>
-      <div className="text-white flex flex-row justify-center items-center gap-x-2">
+      {!!props.roomInfo.meeting.role && <div className="text-white flex flex-row justify-center items-center gap-x-2">
         <span>Your Role: <b className="text-sky-100 hover:underline cursor-pointer" onClick={showUserRoleDialog.onTrue}>{roleName}</b></span>
-        {props.roomInfo.meeting.role && <button className={`text-white text-opacity-90 bg-slate-600 border-none rounded-md hover:bg-slate-500 duration-200 px-2 py-1 ${props.roomInfo.meeting.role ? "cursor-pointer" : ""}`} style={{fontSize: 13}} onClick={showSwitchRoleDialog.onTrue}>Switch</button>}
-      </div>
+        {!!props.roomInfo.meeting.role && <button className={`text-white text-opacity-90 bg-slate-600 border-none rounded-md hover:bg-slate-500 duration-200 px-2 py-1 ${props.roomInfo.meeting.role ? "cursor-pointer" : ""}`} style={{fontSize: 13}} onClick={showSwitchRoleDialog.onTrue}>Switch</button>}
+      </div>}
       <button
         type="button"
         className="ml-3 inline-flex items-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"

@@ -652,6 +652,15 @@ export default function Room(props: Props) {
                 })
               } else if (type === "terminal_started") {
                 refreshTerminalDisplay(e.terminal_id, e.show_welcome_message)
+              } else if (type === "question_update") {
+                enqueueSnackbar({
+                  message: `The coding problem is switched to "${e.question.title}".`,
+                  variant: "info"
+                })
+                editor.current.getModel().setValue(e.question.starter_code);
+                authorEditor.current.setValue(
+                  e.question.starter_code.replace(/[^\n]/g, "?")
+                );
               }
             }}
           />
@@ -792,6 +801,7 @@ export default function Room(props: Props) {
             variant="soft"
             color="error"
             onClick={() => {
+              isResettingTerminal.setValue(true)
               axiosInstance
                 .post(`/rooms/${room_id}/restart-server`, {
                   email: localStorage.getItem("email"),
