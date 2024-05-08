@@ -15,7 +15,7 @@ const ChatUser = (detailContent: IChatProps) => {
                 {type === "text" &&
                     <div className="flex items-end justify-end ">
                         <div className="bg-slate-500 text-gray-50 rounded-lg p-2 ">
-                            {!Array.isArray(value) && <MarkdownTextView rawText={value}></MarkdownTextView>}
+                            {!Array.isArray(value) && <div style={{whiteSpace: "pre-wrap"}}>{value}</div>}
                         </div>
                     </div>
                 }

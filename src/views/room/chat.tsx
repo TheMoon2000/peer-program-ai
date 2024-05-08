@@ -11,18 +11,19 @@ import { HOST } from "@/Constants";
 
 interface Props {
     roomInfo: RoomInfo
-    revokeTerminal: (teminalId: string) => void
+    onReceiveSystemEvent: (type: string, data: any) => void
 }
 const email = localStorage.getItem('email')
 /* Lobe Chat integration */
 export default function Chat(props: Props) {
-    const { revokeTerminal } = props
     const [messages, addMessage, setMessage, makeChoice, typingState] = useChatStore((state) => [state.messages, state.addMessage, state.setMessage, state.makeChoice, state.typingState]);
     const chatWS = useRef<WebSocket | undefined>();
     const [isConnected, setIsConnected] = useState<boolean>(true);
     const containerRef = useRef<HTMLDivElement>(null);
     const updatePreference = useGlobalStore((state) => state.updatePreference);
     const preference = useGlobalStore((state) => state.preference);
+    const autoScrollToBottom = useRef(true)
+
     // restart—timer
     let timer = null
     // send user questions
@@ -35,11 +36,15 @@ export default function Chat(props: Props) {
     }
     const handleUserTypingText = () => {
         const typingAction = { action: "start_typing" }
-        chatWS.current.send(JSON.stringify(typingAction))
+        if (chatWS.current && chatWS.current.readyState === WebSocket.OPEN) {
+            chatWS.current.send(JSON.stringify(typingAction))
+        }
     }
     const handleUserCancelTypingText = () => {
         const typingAction = { action: "stop_typing" }
-        chatWS.current.send(JSON.stringify(typingAction))
+        if (chatWS.current && chatWS.current.readyState === WebSocket.OPEN) {
+            chatWS.current.send(JSON.stringify(typingAction))
+        }
     }
 
     const connectSocketHandler = (e: Event) => {
@@ -54,14 +59,14 @@ export default function Chat(props: Props) {
         } else {
             if (responseData.event === "make_choice") {
                 makeChoice(responseData)
-            } else if (responseData.sender === "system") {
+            } else if (responseData.sender === "system" && !responseData.event) {
                 setMessage(responseData)
             } else if (responseData.event === "start_typing") {
                 typingState(responseData)
             } else if (responseData.event === "stop_typing") {
                 typingState(responseData)
-            } else if (responseData.event === "terminal_started") {
-                revokeTerminal(responseData.terminal_id)
+            } else if (responseData.sender === "system" && responseData.event) {
+                props.onReceiveSystemEvent(responseData.event, responseData)
             } else {
                 setMessage(responseData)
             }
@@ -90,6 +95,7 @@ export default function Chat(props: Props) {
         console.log('Connect Error-->', e)
     }
     const closeSocketHandler = (e: Event) => {
+        console.log('Connect Close-->', e)
         setIsConnected(false)
         chatWS.current = undefined
         chatWS.current?.close()
@@ -117,25 +123,15 @@ export default function Chat(props: Props) {
         if (!chatWS.current) {
             createWebsocket()
         }
-        const handleOnline = () => {
-            setIsConnected(true);
-            restartSocketHandler()
-        };
-        const handleOffline = () => {
-            setIsConnected(false);
-            chatWS.current = undefined
-            chatWS.current?.close()
-        };
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
-        return () => {
-            window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline', handleOffline);
-        };
+
+        containerRef.current.onscrollend = () => {
+            // 如果用户目前（几乎）划到了屏幕最下方，则在增长内容时自动贴着底下。
+            autoScrollToBottom.current = containerRef.current.scrollTop + 10 >= containerRef.current.scrollHeight
+        }
     }, [])
     useEffect(() => {
         const scrollToBottom = () => {
-            if (containerRef.current) {
+            if (containerRef.current && autoScrollToBottom) {
                 const scrollContainer = containerRef.current;
                 // 平滑滚动到底部
                 scrollContainer.scrollTo({
@@ -159,7 +155,7 @@ export default function Chat(props: Props) {
                                 <>
                                     {/* {(item.event && item.event.trim() == 'start_typing') && <ChatAILoading name={item.name} />} */}
                                     {(item.sender !== 'system' && item.event == 'start_typing') && <ChatAILoading name={item.name} />}
-                                    {Array.isArray(item.content) && <ChatAI messageId={i} handleChooseAction={handleSendOption} content={item.content} name={item.name} />}
+                                    {Array.isArray(item.content) && <ChatAI messageId={item.message_id} handleChooseAction={handleSendOption} content={item.content} name={item.name} />}
                                 </>
                                 :
                                 <>
@@ -176,7 +172,7 @@ export default function Chat(props: Props) {
                     {/* Anonymous User */}
                     {email === null && messages.map((item, i) => (
                         <div key={i}>
-                            {Array.isArray(item.content) && <ChatAI messageId={i} handleChooseAction={handleSendOption} content={item.content} name={item.name} />}
+                            {Array.isArray(item.content) && <ChatAI messageId={item.message_id} handleChooseAction={handleSendOption} content={item.content} name={item.name} />}
                             {item.sender === 'system' && (
                                 <p className="flex justify-center items-center my-1">
                                     <span className="text-neutral-500 text-xs">{item.system_message}</span>
