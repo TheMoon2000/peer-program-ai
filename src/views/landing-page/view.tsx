@@ -9,10 +9,11 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import FormControl from "@mui/material/FormControl";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
 import { useBoolean } from "src/hooks/use-boolean";
-import TextField from "@mui/material/TextField";
+import Stack from "@mui/material/Stack";
 import { addUserToRoom } from "@/actions/userActions";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -20,6 +21,9 @@ import { Loader } from "lucide-react";
 import Hero from "./Hero";
 import Features from "./Features";
 import { isDisabled } from "@/utils/helper";
+import { axiosInstance, formatTimeInterval } from "@/Constants";
+import { Link } from "@mui/material";
+import LoadingButton from "@mui/lab/LoadingButton";
 
 export default function LandingPage() {
   const agree = useBoolean(false);
@@ -28,19 +32,16 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const showTermDialog = useBoolean(false)
+  const showErrorDialog = useBoolean(false)
+  const [history, setHistory] = useState<{room_id: string, last_visited: string, partner: string | null}[]>()
   // const rooms = await getRooms();
   // const users = await getUsers();
 
   // Event handler for adding a new todo
   const handleAdd = async (e) => {
     e.preventDefault();
-    // Check to see if user Exists already?
-
-    // const newUser = await addUser(email);
-    // localStorage.setItem("userId", newUser);
     localStorage.setItem("email", email);
     localStorage.setItem("name", name);
-    setEmail("");
     setLoading(true);
     // if mobile
     const userAgent = navigator.userAgent || navigator.vendor;
@@ -54,10 +55,28 @@ export default function LandingPage() {
       router.push(`/mobile`);
     } else {
       // else
-      const room = await addUserToRoom(email, name);
-      router.push(`/rooms/${room}`);
+
+      const history = await axiosInstance.get(`/rooms/recent-activity?email=${email}`).then(r => r.data.history).catch(() => {
+        showErrorDialog.setValue(true)
+        return null
+      })
+      
+      if (history === null) {
+        return
+      }
+      
+      if (history.length > 0) {
+        setLoading(false)
+        setHistory(history)
+        return
+      } else {
+        const room = await addUserToRoom(email, name);
+        router.push(`/rooms/${room}`);
+      }
+ 
     }
   };
+
   if (loading) {
     return (
       <div className="min-h-screen h-full w-full flex items-center justify-center">
@@ -74,11 +93,10 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="relative isolate overflow-hidden bg-gray-900 px-6 py-24 shadow-2xl sm:rounded-3xl sm:px-24 xl:py-32">
             <h2 className="mx-auto max-w-2xl text-center text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Join PearProgram.
+              Join Code In Place's PearProgram.
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-center text-lg leading-8 text-gray-300">
-              Join us to explore new frontiers in collaborative coding. Sign
-              up to join a session now.
+              Get paired up with a partner now! Be sure to enter the same email you used for Code in Place. You’ll need to allow video and audio permissions.
             </p>
             <form className="mx-auto mt-10 flex flex-col max-w-lg gap-x-4 gap-y-4">
               <div className="flex max-w-lg gap-x-4">
@@ -137,7 +155,7 @@ export default function LandingPage() {
                     Acknowledgement
                   </label>
                   <p id="comments-description" className="text-white">
-                    I understand the <span onClick={showTermDialog.onTrue} style={{color: "#c6f0ff", fontWeight: 600, cursor: "pointer"}} className="hover:underline">terms of service</span>.
+                    I agree to follow the Code In Place guidelines and accept the <span onClick={showTermDialog.onTrue} style={{color: "#c6f0ff", fontWeight: 600, cursor: "pointer"}} className="hover:underline">research conditions</span>.
                   </p>
                 </div>
               </div>
@@ -186,6 +204,45 @@ export default function LandingPage() {
         <DialogContent>PearProgram is a research project affiliated with Stanford University.</DialogContent>
         <DialogActions>
           <Button variant="soft" color="primary" onClick={showTermDialog.onFalse}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={showErrorDialog.value} onClose={showErrorDialog.onFalse}>
+        <DialogTitle>Unable to Connect</DialogTitle>
+        <DialogContent>We were unable to establish a connection to the server. Please check your network connection.</DialogContent>
+        <DialogActions>
+          <Button variant="outlined" onClick={showErrorDialog.onFalse}>Cancel</Button>
+          <Button variant="soft" onClick={(e) => {
+            showErrorDialog.onFalse()
+            handleAdd(e)
+          }}>Retry</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!history} onClose={() => setHistory(undefined)}>
+        <DialogTitle>Recent Activity Found</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Our records indicate that you've been in the following session(s) for the past 24 hours. Would you like to return to one of them, or begin a new session?
+          </Typography>
+          <Stack direction="row" alignItems="stretch" py={2}>
+            {history?.map(h => <Link key={h.room_id} href={`/rooms/${h.room_id}`} sx={{display: "inline-block", width: "100%"}}>
+              <Button variant="soft" color="primary" fullWidth sx={{width: "100%", justifyContent: "flex-start"}}>
+                <Stack alignItems="start">
+                  <Typography fontWeight={500}>{`Partner: ${h.partner ?? "None"}`}</Typography>
+                  <Typography variant="caption">{`Last visited: ${formatTimeInterval(Date.now() - Date.parse(h.last_visited))} ago`}</Typography>
+                </Stack>
+              </Button>
+            </Link>)}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+        <Button variant="outlined" onClick={() => setHistory(undefined)}>Cancel</Button>
+        <Button variant="contained" color="primary" onClick={async () => {
+          setLoading(true)
+          const room = await addUserToRoom(email, name);
+          router.push(`/rooms/${room}`);
+        }}>Begin New Session</Button>
         </DialogActions>
       </Dialog>
     </>

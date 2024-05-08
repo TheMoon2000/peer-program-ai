@@ -80,9 +80,9 @@ export const warning = {
 };
 
 export const error = {
-  lighter: '#FFE9D5',
-  light: '#FFAC82',
-  main: '#FF5630',
+  lighter: '#FFE9DF',
+  light: '#FFAC98',
+  main: '#FF5650',
   dark: '#B71D18',
   darker: '#7A0916',
   contrastText: '#FFFFFF',

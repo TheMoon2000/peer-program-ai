@@ -7,6 +7,7 @@ import LoadingButton from "@mui/lab/LoadingButton";
 import "./test-cases.css";
 
 interface Props {
+  useGraphics?: boolean
   cases?: TestCase[] | null;
   results?: TestResult[] | null;
   isWaiting: boolean;
@@ -16,6 +17,7 @@ interface Props {
 export default function TestCases(props: Props) {
   return (
     <div className="px-4 relative test-case-container overflow-y-visible bg-white">
+      <canvas id="canvas" width="390px" height="260px" style={{backgroundColor: "white", border: "1px solid gray", width: "100%", display: props.useGraphics ? "block" : "none"}} />
       {props.cases && (
         <div className="py-2">
           <LoadingButton

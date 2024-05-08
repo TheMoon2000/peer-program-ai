@@ -58,7 +58,7 @@ import {
 } from "@dytesdk/react-ui-kit";
 import { ChatPlaceholder } from "./chat-placeholder";
 import QuestionsDialog from "@/components/QuestionsDialog";
-import { useSnackbar } from "notistack";
+import { enqueueSnackbar, useSnackbar } from "notistack";
 import { DyteParticipant } from "@dytesdk/web-core";
 
 interface Props {
@@ -98,7 +98,8 @@ export default function Room(props: Props) {
   const snackbar = useSnackbar();
 
   const [meeting, initMeeting] = useDyteClient();
-  const [participant, setParticipant] = useState<DyteParticipant>();
+
+  const [updateState, setUpdateState] = useState(0);
   // const awsTranscribe = useRef<AWSTranscribe>();
 
   // Insertion point color
@@ -109,26 +110,30 @@ export default function Room(props: Props) {
       terminalId: string,
       token: string,
       showWelcomeString = true,
-      onOpen?: (ws: WebSocket) => void,
-      showReopenButton = true
+      onOpen?: (ws: WebSocket) => void
     ) => {
       ws.current = new WebSocket(
         `wss://${HOST}/notebook/user/${room_id}/terminals/websocket/${terminalId}?token=${token}`
       );
+      console.log("opened new terminal connection", ws.current);
       if (showWelcomeString) {
         ws.current.onopen = (e) => {
           terminal.current.writeln(
             "Welcome to Pear Program's collaborative terminal. Your code is located at main.py. Run `python main.py` to debug it."
           );
-          onOpen?.(ws.current);
+          if (ws.current.readyState === WebSocket.OPEN) {
+            onOpen?.(ws.current);
+          }
         };
       } else if (onOpen) {
         ws.current.onopen = () => {
           onOpen(ws.current);
         };
       }
+      let oldWs = ws.current;
       ws.current.onclose = (e) => {
-        if (showReopenButton) {
+        if (ws.current === oldWs) {
+          console.log("same ws session, closing old");
           setTerminalInfo(null);
         }
         stopper.dispose();
@@ -191,7 +196,9 @@ export default function Room(props: Props) {
 
     loadPyodide({
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/",
-    }).then((p) => (pyodideRef.current = p));
+    }).then((p) => {
+      pyodideRef.current = p;
+    });
 
     Promise.all([
       axiosInstance.get(`/rooms/${room_id}?email=${userEmail}`),
@@ -470,16 +477,9 @@ export default function Room(props: Props) {
       return;
     }
 
-    // Create a canvas element
-    const sdl2Canvas = canvasRef.current;
-    sdl2Canvas.id = "canvas";
-
-    // Set the canvas for Pyodide (assuming pyodide has a function to set canvas, adjust as necessary)
-    pyodide.canvas.setCanvas2D(sdl2Canvas);
-    // let sdl2Canvas = document.createElement("canvas");
-    // sdl2Canvas.id = "canvas";
-
-    // pyodide.canvas.setCanvas2D(sdl2Canvas);
+    pyodide.canvas.setCanvas2D(
+      document.querySelector("#canvas") as HTMLCanvasElement
+    );
 
     setTestResults(undefined);
     isRunningTests.setValue(true);
@@ -550,6 +550,7 @@ export default function Room(props: Props) {
     await axiosInstance
       .post(`/rooms/${room_id}/test_results`, {
         test_results: newTestResults,
+        email: localStorage.getItem("email"),
       })
       .catch((err) => {
         console.warn(err);
@@ -592,16 +593,18 @@ export default function Room(props: Props) {
   }, [roomInfo]);
 
   const refreshTerminalDisplay = useCallback(
-    (terminalName: string) => {
+    (terminalName: string, showWelcomeMessage: boolean) => {
       if (roomInfo.current) {
         setTerminalInfo({
           id: terminalName,
           token: roomInfo.current.room.jupyter_server_token,
         });
-        terminalListenerStopper.current.dispose();
+        terminalListenerStopper.current?.dispose();
         initiateTerminalSession(
           terminalName,
-          roomInfo.current.room.jupyter_server_token
+          roomInfo.current.room.jupyter_server_token,
+          showWelcomeMessage,
+          undefined
         );
       }
     },
@@ -621,48 +624,6 @@ export default function Room(props: Props) {
   return (
     <>
       <Stack className="full-screen">
-        <div className="h-[100px] bg-gray-800">
-          {/* <DytePipToggle meeting={meeting} /> */}
-          {meeting && ( // Need to render video out to get main context
-            <>
-              {/* <DyteMeeting
-                // mode="fill"
-                meeting={meeting}
-                style={{ height: "100%" }}
-              /> */}
-              <DyteGrid meeting={meeting} style={{ height: "100%" }} />
-              {/* <DyteProvider value={meeting}> */}
-              {/* <DyteMeeting
-                mode="fill"
-                meeting={meeting}
-                style={{ height: "100%" }}
-                // className="absolute w-0 h-0 overflow-hidden -z-10" // use this to hide the video from view
-              /> */}
-              {/* {console.log("active particpants", meeting.participants.active)} */}
-              {/* <DyteParticipantTile
-                participant={meeting.self}
-                style={{ height: "100%" }}
-                // className="absolute h-[80vh] w-[80vh] "
-              >
-                <DyteNameTag participant={meeting.self}>
-                  <DyteAudioVisualizer slot="start" />
-                </DyteNameTag>
-              </DyteParticipantTile>
-              {participant && (
-                <DyteParticipantTile
-                  participant={participant}
-                  style={{ height: "100%" }}
-                  // className="absolute h-[80vh] w-[80vh] "
-                >
-                  <DyteNameTag participant={participant}>
-                    <DyteAudioVisualizer slot="start" />
-                  </DyteNameTag>
-                </DyteParticipantTile>
-              )} */}
-              {/* </DyteProvider> */}
-            </>
-          )}
-        </div>
         <Navbar
           onRun={runPythonRunCommand}
           meeting={meeting}
@@ -677,7 +638,39 @@ export default function Room(props: Props) {
         >
           <Chat
             roomInfo={roomInfo.current}
-            revokeTerminal={refreshTerminalDisplay}
+            onReceiveSystemEvent={(type, e) => {
+              console.log("system message", e);
+              if (type === "update_role") {
+                const email = localStorage.getItem("email");
+                if (email in e.roles) {
+                  roomInfo.current.meeting.role = e.roles[email];
+                  setUpdateState((updateState + 1) % 10000);
+                  enqueueSnackbar({
+                    message: `Your role has been updated to ${
+                      ["Guest", "Driver", "Navigator"][e.roles[email]]
+                    }`,
+                    variant: "info",
+                  });
+                }
+              } else if (type === "autograder_update") {
+                setTestResults(e.results);
+                enqueueSnackbar({
+                  message: `Your partner has run the autograder.`,
+                  variant: "info",
+                });
+              } else if (type === "terminal_started") {
+                refreshTerminalDisplay(e.terminal_id, e.show_welcome_message);
+              } else if (type === "question_update") {
+                enqueueSnackbar({
+                  message: `The coding problem is switched to "${e.question.title}".`,
+                  variant: "info",
+                });
+                editor.current.getModel().setValue(e.question.starter_code);
+                authorEditor.current.setValue(
+                  e.question.starter_code.replace(/[^\n]/g, "?")
+                );
+              }
+            }}
           />
           <div>
             <Split
@@ -725,6 +718,7 @@ export default function Room(props: Props) {
                   {/* <div id="author-editor" className="relative" /> */}
                   <Box sx={{ overflowY: "auto" }}>
                     <TestCases
+                      useGraphics={roomInfo.current.room.use_graphics}
                       onRun={runCode}
                       cases={roomInfo.current?.room.test_cases}
                       results={testResults}
@@ -767,6 +761,7 @@ export default function Room(props: Props) {
                         axiosInstance
                           .post(`/rooms/${room_id}/create-server`, {
                             email: localStorage.getItem("email"),
+                            show_welcome_message: true,
                           })
                           .then((r) => {
                             setTerminalInfo({
@@ -812,9 +807,10 @@ export default function Room(props: Props) {
           <LoadingButton
             disabled={isResettingTerminal.value}
             loading={isResettingTerminal.value}
-            variant="contained"
+            variant="soft"
             color="error"
             onClick={() => {
+              isResettingTerminal.setValue(true);
               axiosInstance
                 .post(`/rooms/${room_id}/restart-server`, {
                   email: localStorage.getItem("email"),

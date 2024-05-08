@@ -55,7 +55,7 @@ const ChatAI = (detailContent: IChatAIProps) => {
                                                 item.choice_index !== undefined ?
                                                     <FormControlLabel
                                                         key={j}
-                                                        value={`${messageId},${j},${item.choice_index}`}
+                                                        value={`${messageId},${i},${j}`}
                                                         control={<Radio />}
                                                         label={option}
                                                         checked={item.choice_index === j}
@@ -64,10 +64,10 @@ const ChatAI = (detailContent: IChatAIProps) => {
                                                     :
                                                     <FormControlLabel
                                                         key={j}
-                                                        value={`${messageId},${j},${item.choice_index}`}
+                                                        value={`${messageId},${i},${j}`}
                                                         control={<Radio />}
                                                         label={option}
-                                                        disabled={selectedValue !== '' && selectedValue !== `${messageId},${j},${item.choice_index}`}
+                                                        disabled={selectedValue !== '' && selectedValue !== `${messageId},${i},${j}`}
                                                         className='text-black'
                                                     />
 
