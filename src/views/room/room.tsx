@@ -60,6 +60,7 @@ import { ChatPlaceholder } from "./chat-placeholder";
 import QuestionsDialog from "@/components/QuestionsDialog";
 import { enqueueSnackbar, useSnackbar } from "notistack";
 import { DyteParticipant } from "@dytesdk/web-core";
+import { replaceCanvasImport } from "@/utils/helper";
 
 interface Props {
   roomId: string;
@@ -83,6 +84,8 @@ export default function Room(props: Props) {
   const terminalListenerStopper = useRef<IDisposable>();
   const fitAddOn = useRef<FitAddon>(new FitAddon());
   const pyodideRef = useRef<PyodideInterface | undefined>();
+  const canvasRef = useRef(null);
+
   const ws = useRef<WebSocket | undefined>();
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | undefined>();
   const authorEditor = useRef<monaco.editor.ICodeEditor | undefined>();
@@ -97,7 +100,7 @@ export default function Room(props: Props) {
 
   const [meeting, initMeeting] = useDyteClient();
 
-  const [updateState, setUpdateState] = useState(0)
+  const [updateState, setUpdateState] = useState(0);
   // const awsTranscribe = useRef<AWSTranscribe>();
 
   // Insertion point color
@@ -113,7 +116,7 @@ export default function Room(props: Props) {
       ws.current = new WebSocket(
         `wss://${HOST}/notebook/user/${room_id}/terminals/websocket/${terminalId}?token=${token}`
       );
-      console.log("opened new terminal connection", ws.current)
+      console.log("opened new terminal connection", ws.current);
       if (showWelcomeString) {
         ws.current.onopen = (e) => {
           terminal.current.writeln(
@@ -128,10 +131,10 @@ export default function Room(props: Props) {
           onOpen(ws.current);
         };
       }
-      let oldWs = ws.current
+      let oldWs = ws.current;
       ws.current.onclose = (e) => {
         if (ws.current === oldWs) {
-          console.log("same ws session, closing old")
+          console.log("same ws session, closing old");
           setTerminalInfo(null);
         }
         stopper.dispose();
@@ -166,7 +169,7 @@ export default function Room(props: Props) {
           ws.current.send(JSON.stringify(["stdin", arg1]));
         }
       });
-      terminalListenerStopper.current = stopper
+      terminalListenerStopper.current = stopper;
     },
     [terminalInfo]
   );
@@ -195,7 +198,7 @@ export default function Room(props: Props) {
     loadPyodide({
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/",
     }).then((p) => {
-      pyodideRef.current = p
+      pyodideRef.current = p;
     });
 
     Promise.all([
@@ -468,14 +471,16 @@ export default function Room(props: Props) {
   };
 
   const runCode = async () => {
-    const currentCode = editor.current.getValue();
+    const currentCode = replaceCanvasImport(editor.current.getValue());
     const pyodide = pyodideRef.current;
     if (!pyodide) {
       alert("Browser doesn't support python!");
       return;
     }
 
-    pyodide.canvas.setCanvas2D(document.querySelector("#canvas") as HTMLCanvasElement)
+    pyodide.canvas.setCanvas2D(
+      document.querySelector("#canvas") as HTMLCanvasElement
+    );
 
     setTestResults(undefined);
     isRunningTests.setValue(true);
@@ -520,6 +525,7 @@ export default function Room(props: Props) {
         },
         isatty: false,
       });
+      // TODO: Add register JS Module here?
 
       await pyodide.runPythonAsync(currentCode).catch((err) => {
         errMsg = `${err}`;
@@ -546,7 +552,7 @@ export default function Room(props: Props) {
     await axiosInstance
       .post(`/rooms/${room_id}/test_results`, {
         test_results: newTestResults,
-        email: localStorage.getItem("email")
+        email: localStorage.getItem("email"),
       })
       .catch((err) => {
         console.warn(err);
@@ -556,34 +562,35 @@ export default function Room(props: Props) {
   };
 
   const runPythonRunCommand = useCallback(() => {
-    axiosInstance.post(`/rooms/${room_id}/create-server`, {
-      email: localStorage.getItem("email"),
-      show_welcome_message: false
-    }).then(async (r) => {
-      await axiosInstance
-        .post(`/rooms/${room_id}/code`, {
-          file: editor.current.getValue(),
-          author_map: authorEditor.current.getValue(),
-        })
-        .catch((err) => {
-          console.warn(err);
+    axiosInstance
+      .post(`/rooms/${room_id}/create-server`, {
+        email: localStorage.getItem("email"),
+      })
+      .then(async (r) => {
+        await axiosInstance
+          .post(`/rooms/${room_id}/code`, {
+            file: editor.current.getValue(),
+            author_map: authorEditor.current.getValue(),
+          })
+          .catch((err) => {
+            console.warn(err);
+          });
+
+        setTerminalInfo({
+          id: r.data.terminal_id,
+          token: roomInfo.current.room.jupyter_server_token,
         });
-      
-      setTerminalInfo({
-        id: r.data.terminal_id,
-        token: roomInfo.current.room.jupyter_server_token,
+        terminalListenerStopper.current.dispose();
+        initiateTerminalSession(
+          r.data.terminal_id,
+          roomInfo.current.room.jupyter_server_token,
+          false,
+          (ws) => {
+            ws.send(JSON.stringify(["stdin", "python main.py\n"]));
+            terminal.current.focus();
+          }
+        );
       });
-      terminalListenerStopper.current?.dispose();
-      initiateTerminalSession(
-        r.data.terminal_id,
-        roomInfo.current.room.jupyter_server_token,
-        false,
-        (ws) => {
-          ws.send(JSON.stringify(["stdin", "python main.py\n"]));
-          terminal.current.focus()
-        }
-      );
-    });
   }, [roomInfo]);
 
   const refreshTerminalDisplay = useCallback(
@@ -633,30 +640,32 @@ export default function Room(props: Props) {
           <Chat
             roomInfo={roomInfo.current}
             onReceiveSystemEvent={(type, e) => {
-              console.log('system message', e)
+              console.log("system message", e);
               if (type === "update_role") {
-                const email = localStorage.getItem("email")
+                const email = localStorage.getItem("email");
                 if (email in e.roles) {
-                  roomInfo.current.meeting.role = e.roles[email]
-                  setUpdateState((updateState + 1) % 10000)
+                  roomInfo.current.meeting.role = e.roles[email];
+                  setUpdateState((updateState + 1) % 10000);
                   enqueueSnackbar({
-                    message: `Your role has been updated to ${["Guest", "Driver", "Navigator"][e.roles[email]]}`,
-                    variant: "info"
-                  })
+                    message: `Your role has been updated to ${
+                      ["Guest", "Driver", "Navigator"][e.roles[email]]
+                    }`,
+                    variant: "info",
+                  });
                 }
               } else if (type === "autograder_update") {
-                setTestResults(e.results)
+                setTestResults(e.results);
                 enqueueSnackbar({
                   message: `Your partner has run the autograder.`,
-                  variant: "info"
-                })
+                  variant: "info",
+                });
               } else if (type === "terminal_started") {
-                refreshTerminalDisplay(e.terminal_id, e.show_welcome_message)
+                refreshTerminalDisplay(e.terminal_id, e.show_welcome_message);
               } else if (type === "question_update") {
                 enqueueSnackbar({
                   message: `The coding problem is switched to "${e.question.title}".`,
-                  variant: "info"
-                })
+                  variant: "info",
+                });
                 editor.current.getModel().setValue(e.question.starter_code);
                 authorEditor.current.setValue(
                   e.question.starter_code.replace(/[^\n]/g, "?")
@@ -720,6 +729,7 @@ export default function Room(props: Props) {
                       questions={questions}
                       handleQuestionChange={handleQuestionChange}
                     />
+                    <canvas ref={canvasRef}></canvas>
                   </Box>
                 </Split>
               </div>
@@ -752,7 +762,7 @@ export default function Room(props: Props) {
                         axiosInstance
                           .post(`/rooms/${room_id}/create-server`, {
                             email: localStorage.getItem("email"),
-                            show_welcome_message: true
+                            show_welcome_message: true,
                           })
                           .then((r) => {
                             setTerminalInfo({
@@ -801,7 +811,7 @@ export default function Room(props: Props) {
             variant="soft"
             color="error"
             onClick={() => {
-              isResettingTerminal.setValue(true)
+              isResettingTerminal.setValue(true);
               axiosInstance
                 .post(`/rooms/${room_id}/restart-server`, {
                   email: localStorage.getItem("email"),
