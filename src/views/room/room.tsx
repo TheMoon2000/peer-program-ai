@@ -534,7 +534,7 @@ export default function Room(props: Props) {
         stdoutObserved: userStdout,
         error: errMsg,
         isCorrect:
-          !errMsg &&
+          !errMsg && userStdout.length === testCase.stdout_expected.length &&
           userStdout.every(
             (v, i) => v.trim() === testCase.stdout_expected[i]?.trim()
           ),
