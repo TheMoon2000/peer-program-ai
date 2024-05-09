@@ -60,6 +60,7 @@ import { ChatPlaceholder } from "./chat-placeholder";
 import QuestionsDialog from "@/components/QuestionsDialog";
 import { enqueueSnackbar, useSnackbar } from "notistack";
 import { DyteParticipant } from "@dytesdk/web-core";
+import { replaceCanvasImport } from "@/utils/helper";
 
 interface Props {
   roomId: string;
@@ -470,7 +471,7 @@ export default function Room(props: Props) {
   };
 
   const runCode = async () => {
-    const currentCode = editor.current.getValue();
+    const currentCode = replaceCanvasImport(editor.current.getValue());
     const pyodide = pyodideRef.current;
     if (!pyodide) {
       alert("Browser doesn't support python!");
@@ -524,6 +525,7 @@ export default function Room(props: Props) {
         },
         isatty: false,
       });
+      // TODO: Add register JS Module here?
 
       await pyodide.runPythonAsync(currentCode).catch((err) => {
         errMsg = `${err}`;
@@ -586,8 +588,7 @@ export default function Room(props: Props) {
           (ws) => {
             ws.send(JSON.stringify(["stdin", "python main.py\n"]));
             terminal.current.focus();
-          },
-          false
+          }
         );
       });
   }, [roomInfo]);
