@@ -62,6 +62,8 @@ import { enqueueSnackbar, useSnackbar } from "notistack";
 import { DyteParticipant } from "@dytesdk/web-core";
 import { replaceCanvasImport } from "@/utils/helper";
 
+import * as unthrow from "@/graphics/unthrow";
+
 interface Props {
   roomId: string;
 }
@@ -471,8 +473,12 @@ export default function Room(props: Props) {
   };
 
   const runCode = async () => {
-    const currentCode = replaceCanvasImport(editor.current.getValue());
+    const currentCode = editor.current.getValue()
+
+    // const currentCode = replaceCanvasImport(editor.current.getValue());
     const pyodide = pyodideRef.current;
+    pyodide.registerJsModule("graphics", unthrow)
+    
     if (!pyodide) {
       alert("Browser doesn't support python!");
       return;
