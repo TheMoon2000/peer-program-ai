@@ -24,6 +24,7 @@ import { isDisabled } from "@/utils/helper";
 import { axiosInstance, formatTimeInterval } from "@/Constants";
 import { Link } from "@mui/material";
 import LoadingButton from "@mui/lab/LoadingButton";
+import MarkdownTextView from "@/components/MarkdownTextView/MarkdownTextView";
 
 export default function LandingPage() {
   const agree = useBoolean(false);
@@ -199,9 +200,27 @@ export default function LandingPage() {
         </div>
       </div>
       
-      <Dialog open={showTermDialog.value} onClose={showTermDialog.onFalse}>
+      <Dialog open={showTermDialog.value} onClose={showTermDialog.onFalse} maxWidth="md" fullWidth >
         <DialogTitle>Terms of Service</DialogTitle>
-        <DialogContent>PearProgram is a research project affiliated with Stanford University.</DialogContent>
+        <DialogContent style={{fontWeight: "unset"}}>
+            
+          <MarkdownTextView rawText={`
+**Pear Program IS A RESEARCH PROJECT**
+
+We are building Pear Program to learn about pair programming. The information we gather from your engagement with Pear Program enables our research team to understand how students learn coding and collaborative skills in CS contexts.. The knowledge we gain through Pear Program is available to inform students' decisions, teaching and administration at Stanford, and the accumulation of scientific knowledge about learning and collaboration generally.
+
+Your contributions: By using Pear Program, you are volunteering for research. As you log in to Pear Program, a hash identifier is assigned to track your usage. We track, collect and aggregate information regarding your interactions with Pear Program including, among other things, the pages of the site you visit, the order and timing of your activities on Pear Program, search terms, pinning, and the hyperlinks you "click." We also may ask you to answer some simple survey questions. In the interest of research you may be exposed to some variation in the presentation of information available to you on the Pear Program portal. You may stop participating in this research at any time by no longer using Pear Program. Neither your academic progress nor program eligibility is contingent on your participation or non-participation in Pear Program.
+
+We study the data we gather through Pear Program by linking it with other information about Stanford students collected through other University systems. The data will be coded so that your name will be removed and replaced with a unique identifying code. We will neither identify you by name in any discussions or publications, nor describe data in such a way that you can be identified.
+
+While we cannot guarantee that you will receive any benefits from using Pear Program, the potential benefits include giving you more information about your learning and interactions with your coding partner. There is minimal risk associated with participating in this research.
+
+Our commitments: We use our research findings to continually improve Pear Program and contribute to public discussion of educational improvement at Stanford and worldwide. In doing our work we consider and analyze data and report research findings at the aggregate level only.
+
+You can read this message again any time from a link at the bottom of the landing page. If you have questions about this research please contact Pear Program team member Maxwell at Pear mbigman@stanford.edu. If you have concerns about this research and would like to speak with someone independent of the research team, you may contact the Stanford IRB at irb2-manager@lists.stanford.edu.
+`}/>
+
+        </DialogContent>
         <DialogActions>
           <Button variant="soft" color="primary" onClick={showTermDialog.onFalse}>Close</Button>
         </DialogActions>
