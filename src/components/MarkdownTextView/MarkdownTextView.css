@@ -43,11 +43,19 @@
 .inline-code {
     display: inline-block;
     border-radius: 4px;
-    background-color: #f2f2f2;
+    background-color: #d0d0d060;
     padding: 1px 4px;
     font-size: 90%;
-    color: #4c5f9f;
+    color: #576cb1;
     margin: 0px 1px;
+}
+
+pre > .inline-code {
+    display: block;
+    border-radius: 6px;
+    padding: 5px 6px;
+    color: #4c70a5;
+    margin: 5px 0px;
 }
 
 .markdown-view blockquote {

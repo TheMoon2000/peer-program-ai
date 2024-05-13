@@ -33,10 +33,10 @@ export const SYNTAX_THEME = {
       "hyphens": "none",
     },
     "pre[class*=\"language-\"]": {
-      "borderRadius": "5px",
+      "borderRadius": "6px",
       "maxWidth": "100%",
       "color": "black",
-      "background": "#f2f2f2",
+      "background": "#d0d0d060",
       "fontFamily": "Menlo, Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace",
       "fontSize": "1em",
       "textAlign": "left",

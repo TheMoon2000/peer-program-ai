@@ -63,6 +63,7 @@ import { DyteParticipant } from "@dytesdk/web-core";
 import { replaceCanvasImport } from "@/utils/helper";
 
 import * as unthrow from "@/graphics/unthrow";
+import MarkdownTextView from "@/components/MarkdownTextView/MarkdownTextView";
 
 interface Props {
   roomId: string;
@@ -99,6 +100,7 @@ export default function Room(props: Props) {
   const showResetTerminalDialog = useBoolean(false);
   const [questions, setQuestions] = useState<Question[]>();
   const snackbar = useSnackbar();
+  const [participantLeftMessage, setParticipantLeftMessage] = useState<{ title: string, message: string }>(undefined)
 
   const [meeting, initMeeting] = useDyteClient();
 
@@ -361,54 +363,11 @@ export default function Room(props: Props) {
     }
   }, [isPageLoaded.value]);
 
-  useEffect(() => {
-    if (meeting) {
-      // console.log("logging meeting", meeting.participants.active.toArray());
-      // // const activeParticipants = useDyteSelector(meeting.participants.active);
-      // meeting.participants.active.on("participantJoined", (participant) => {
-      //   console.log(
-      //     "logging meeting participants",
-      //     meeting.participants.active.toArray()
-      //   );
-      //   console.log("participant type", typeof participant);
-      //   console.log(`Participant ${participant.name} joined`);
-      //   console.log(`Participant video track: ${participant.videoTrack}`);
-      //   setParticipant(participant);
-      //   console.log("participant details", participant);
-      // });
-      // // const participant1 = meeting.participants.active.get(participantId);
-      // console.log(
-      //   "active particpants",
-      //   // activeParticipants,
-      //   meeting.participants.active
-      // );
-      // console.log("self particpants", meeting.self);
-      // // console.log("pip supported?", meeting.participants.pip.isSupported());
-      // meeting.participants.pip.init({
-      //   // width: 360,
-      //   // height: 360,
-      // });
-      // console.log("logging meeting", meeting.participants);
-      /*
-      awsTranscribe.current = new DyteAWSTranscribe({
-        meeting,
-        //@ts-ignore
-        translate: false, // Control whether to translate the source language to target language or just transcribe
-        source: 'en-US', // Supported languages: https://docs.aws.amazon.com/translate/latest/dg/what-is-languages.html
-        preSignedUrlEndpoint: `http://${HOST}/dyte-aws-transcribe/aws-transcribe-presigned-url`,
-        translationEndpoint: `http://${HOST}/dyte-aws-transcribe/translate`, // ${backend_url}/translate. backend_url is from step 2.4
-      });
-      awsTranscribe.current.transcribe()
-      awsTranscribe.current.on("transcription", async args => {
-        console.log('transcription', args)
-      })*/
-    }
-  }, [meeting]);
-
   const restartRustpad = useCallback(() => {
     if (rustpad.current) {
       rustpad.current.dispose();
     }
+    rustpad.current?.dispose()
     rustpad.current = new Rustpad({
       uri: `wss://rustpad.io/api/socket/${room_id}`,
       editor: editor.current,
@@ -432,7 +391,7 @@ export default function Room(props: Props) {
         rustpadFailed.setValue(true);
       },
     });
-
+    authorRustpad.current?.dispose()
     authorRustpad.current = new Rustpad({
       uri: `wss://rustpad.io/api/socket/${room_id}-authors`,
       editor: authorEditor.current,
@@ -676,6 +635,8 @@ export default function Room(props: Props) {
                 authorEditor.current.setValue(
                   e.question.starter_code.replace(/[^\n]/g, "?")
                 );
+              } else if (type === "leave_session") {
+                setParticipantLeftMessage({ title: e.title, message: e.message })
               }
             }}
           />
@@ -843,6 +804,14 @@ export default function Room(props: Props) {
           >
             Restart Terminal
           </LoadingButton>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={participantLeftMessage !== undefined} onClose={() => setParticipantLeftMessage(undefined)}>
+        <DialogTitle>{participantLeftMessage?.title}</DialogTitle>
+        <DialogContent>{participantLeftMessage?.message}</DialogContent>
+        <DialogActions>
+          <Button variant="soft" color="primary" onClick={() => setParticipantLeftMessage(undefined)}>Got it</Button>
         </DialogActions>
       </Dialog>
       {/* </DyteProvider> */}

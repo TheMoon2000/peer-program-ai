@@ -225,8 +225,8 @@ export default function LandingPage() {
           <Typography>
             Our records indicate that you've been in the following session(s) for the past 24 hours. Would you like to return to one of them, or begin a new session?
           </Typography>
-          <Stack direction="row" alignItems="stretch" py={2}>
-            {history?.map(h => <Link key={h.room_id} href={`/rooms/${h.room_id}`} sx={{display: "inline-block", width: "100%"}}>
+          <Stack direction="column" alignItems="stretch" py={2} rowGap={1}>
+            {history?.map(h => <Link key={h.room_id} href={`/rooms/${h.room_id}`} underline="none" sx={{display: "inline-block", width: "100%"}}>
               <Button variant="soft" color="primary" fullWidth sx={{width: "100%", justifyContent: "flex-start"}}>
                 <Stack alignItems="start">
                   <Typography fontWeight={500}>{`Partner: ${h.partner ?? "None"}`}</Typography>
