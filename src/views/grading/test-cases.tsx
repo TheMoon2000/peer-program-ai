@@ -36,6 +36,7 @@ export default function TestCases(props: Props) {
         {props.results &&
           props.cases?.map((testCase, caseIndex) => {
             const testResult = props.results[caseIndex];
+            if (!testResult) { return <></>}
             return (
               <Accordion key={caseIndex} sx={{ my: 1 }} defaultExpanded>
                 <AccordionSummary

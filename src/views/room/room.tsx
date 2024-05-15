@@ -140,16 +140,18 @@ export default function Room(props: Props) {
         if (ws.current === oldWs) {
           console.log("same ws session, closing old");
           setTerminalInfo(null);
+          stopper.dispose();
+          terminal.current.blur();
+          terminal.current.dispose();
+          terminal.current = new Terminal({ cursorBlink: true });
+          terminal.current.loadAddon(fitAddOn.current);
+          terminal.current.open(document.getElementById("terminal"));
+          fitAddOn.current.fit();
+        } else {
+          terminal.current.reset()
         }
-        stopper.dispose();
-        terminal.current.blur();
-        terminal.current.dispose();
-        terminal.current = new Terminal({ cursorBlink: true });
-        terminal.current.loadAddon(fitAddOn.current);
-        terminal.current.open(document.getElementById("terminal"));
-        fitAddOn.current.fit();
       };
-
+      
       ws.current.onmessage = (e: MessageEvent<any>) => {
         const [type, content] = JSON.parse(e.data);
         if (type === "stdout") {
@@ -545,7 +547,7 @@ export default function Room(props: Props) {
           id: r.data.terminal_id,
           token: roomInfo.current.room.jupyter_server_token,
         });
-        terminalListenerStopper.current.dispose();
+        terminalListenerStopper.current?.dispose();
         initiateTerminalSession(
           r.data.terminal_id,
           roomInfo.current.room.jupyter_server_token,
@@ -565,12 +567,14 @@ export default function Room(props: Props) {
           id: terminalName,
           token: roomInfo.current.room.jupyter_server_token,
         });
-        terminalListenerStopper.current?.dispose();
+        // terminalListenerStopper.current?.dispose();
         initiateTerminalSession(
           terminalName,
           roomInfo.current.room.jupyter_server_token,
           showWelcomeMessage,
-          undefined
+          (ws) => {
+            terminal.current.focus()
+          }
         );
       }
     },
@@ -738,7 +742,8 @@ export default function Room(props: Props) {
                             });
                             initiateTerminalSession(
                               r.data.terminal_id,
-                              roomInfo.current.room.jupyter_server_token
+                              roomInfo.current.room.jupyter_server_token,
+                              true,
                             );
                           })
                           .catch((err) => console.warn(err))
@@ -788,10 +793,11 @@ export default function Room(props: Props) {
                     id: r.data.terminal.name,
                     token: terminalInfo.token,
                   });
-                  terminalListenerStopper.current.dispose();
+                  terminalListenerStopper.current?.dispose();
                   initiateTerminalSession(
                     r.data.terminal.name,
-                    terminalInfo.token
+                    terminalInfo.token,
+                    true,
                   );
                   showResetTerminalDialog.onFalse();
                   setTimeout(isResettingTerminal.onFalse, 500);
