@@ -285,9 +285,7 @@ export default function Room(props: Props) {
       editor.current = monaco.editor.create(
         document.querySelector("#code-editor")!,
         {
-          value: roomInfo.current.room.rustpad_code
-            ? ""
-            : roomInfo.current.room.code,
+          value: "",
           minimap: {
             enabled: false, // This disables the minimap
           },
@@ -581,6 +579,51 @@ export default function Room(props: Props) {
     [setTerminalInfo, initiateTerminalSession]
   );
 
+  const onReceiveSystemEvent = useCallback((type: string, e: any) => {
+    console.log("system message", e);
+    if (type === "update_role") {
+      const email = localStorage.getItem("email");
+      if (email in e.roles) {
+        roomInfo.current.meeting.role = e.roles[email];
+        setUpdateState(Date.now());
+        enqueueSnackbar({
+          message: `Your role has been updated to ${
+            ["Guest", "Driver", "Navigator"][e.roles[email]]
+          }`,
+          variant: "info",
+        });
+      }
+    } else if (type === "autograder_update") {
+      setTestResults(e.results);
+      enqueueSnackbar({
+        message: `Your partner has run the autograder.`,
+        variant: "info",
+      });
+    } else if (type === "terminal_started") {
+      refreshTerminalDisplay(e.terminal_id, e.show_welcome_message);
+    } else if (type === "question_update") {
+      roomInfo.current.room.test_cases = e.question.test_cases
+      roomInfo.current.room.question_id = e.question.question_id
+
+      enqueueSnackbar({
+        message: `The coding problem is switched to "${e.question.title}".`,
+        variant: "info",
+      });
+
+      if (e.email === localStorage.getItem("email")) {
+        editor.current.getModel().setValue(e.question.starter_code);
+        authorEditor.current.setValue(
+          e.question.starter_code.replace(/[^\n]/g, "?")
+        );
+      }
+
+      setUpdateState(Date.now())
+
+    } else if (type === "leave_session") {
+      setParticipantLeftMessage({ title: e.title, message: e.message })
+    }
+  }, [updateState, participantLeftMessage, refreshTerminalDisplay])
+
   if (!isPageLoaded.value) {
     return <Loading text={"Loading room..."} />;
   } else if (!roomInfo.current) {
@@ -608,41 +651,7 @@ export default function Room(props: Props) {
         >
           <Chat
             roomInfo={roomInfo.current}
-            onReceiveSystemEvent={(type, e) => {
-              console.log("system message", e);
-              if (type === "update_role") {
-                const email = localStorage.getItem("email");
-                if (email in e.roles) {
-                  roomInfo.current.meeting.role = e.roles[email];
-                  setUpdateState((updateState + 1) % 10000);
-                  enqueueSnackbar({
-                    message: `Your role has been updated to ${
-                      ["Guest", "Driver", "Navigator"][e.roles[email]]
-                    }`,
-                    variant: "info",
-                  });
-                }
-              } else if (type === "autograder_update") {
-                setTestResults(e.results);
-                enqueueSnackbar({
-                  message: `Your partner has run the autograder.`,
-                  variant: "info",
-                });
-              } else if (type === "terminal_started") {
-                refreshTerminalDisplay(e.terminal_id, e.show_welcome_message);
-              } else if (type === "question_update") {
-                enqueueSnackbar({
-                  message: `The coding problem is switched to "${e.question.title}".`,
-                  variant: "info",
-                });
-                editor.current.getModel().setValue(e.question.starter_code);
-                authorEditor.current.setValue(
-                  e.question.starter_code.replace(/[^\n]/g, "?")
-                );
-              } else if (type === "leave_session") {
-                setParticipantLeftMessage({ title: e.title, message: e.message })
-              }
-            }}
+            onReceiveSystemEvent={onReceiveSystemEvent}
           />
           <div>
             <Split

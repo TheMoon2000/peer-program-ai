@@ -105,7 +105,7 @@ export default function Navbar(props: Props) {
               // disabled={!!props.meeting.participants}
               onClick={showVideo.onTrue}
             >
-              Expand Video
+              Video Settings
               {/* <DytePipToggle
             meeting={props.meeting}
             className="ml-3 inline-flex items-center rounded-md bg-zinc-50 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
@@ -117,7 +117,7 @@ export default function Navbar(props: Props) {
       <div style={{flexGrow: 1, flexShrink: 1, height: "100px", position: "relative"}}>
         {props.meeting && <DyteGrid meeting={props.meeting} style={{ height: "100%" }} />}
       </div>
-      {!!props.roomInfo.meeting.role && <div className="text-white flex flex-row justify-center items-center gap-x-2">
+      {(props.roomInfo.meeting.role === 1 || props.roomInfo.meeting.role === 2) && <div className="text-white flex flex-row justify-center items-center gap-x-2">
         <span>Your Role: <b className="text-sky-100 hover:underline cursor-pointer" onClick={showUserRoleDialog.onTrue}>{roleName}</b></span>
         {!!props.roomInfo.meeting.role && <button className={`text-white text-opacity-90 bg-slate-600 border-none rounded-md hover:bg-slate-500 duration-200 px-2 py-1 ${props.roomInfo.meeting.role ? "cursor-pointer" : ""}`} style={{fontSize: 13}} onClick={showSwitchRoleDialog.onTrue}>Switch</button>}
       </div>}
@@ -155,7 +155,7 @@ export default function Navbar(props: Props) {
 
       {!!props.roomInfo.meeting.role && <Dialog open={showUserRoleDialog.value} onClose={showUserRoleDialog.onFalse} fullWidth maxWidth="sm">
         <DialogTitle>{`The ${["", "Driver", "Navigator"][props.roomInfo.meeting.role]}`}</DialogTitle>
-        <DialogContent>{props.roomInfo.meeting.role === 1 ? "As the driver, your responsibility involves..." : "As the navigator, your responsibility involves..."}</DialogContent>
+        <DialogContent>{props.roomInfo.meeting.role === 1 ? "As the driver, your responsibility involves writing the code. You should think out loud and help the navigator understand the code." : "As the navigator, your responsibility involves reviewing each line of code as it is typed by the Driver, considering the big picture, and providing directions and suggestions."}</DialogContent>
         <DialogActions>
           <Button variant="soft" color="primary" onClick={showUserRoleDialog.onFalse}>Close</Button>
         </DialogActions>

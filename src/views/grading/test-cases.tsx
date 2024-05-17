@@ -5,6 +5,7 @@ import AccordionDetails from "@mui/material/AccordionDetails";
 import ArrowForwardIosSharpIcon from "@mui/icons-material/ArrowForwardIosSharp";
 import LoadingButton from "@mui/lab/LoadingButton";
 import "./test-cases.css";
+import { useEffect } from "react";
 
 interface Props {
   useGraphics?: boolean
