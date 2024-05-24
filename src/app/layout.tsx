@@ -23,7 +23,6 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         {" "}
-        {/* Add inter font */}
         <SettingsProvider
           defaultSettings={{
             themeMode: "light", // 'light' | 'dark'
