@@ -2,6 +2,8 @@ import MarkdownTextView from '@/components/MarkdownTextView/MarkdownTextView';
 import { FormControl, FormControlLabel, Radio, RadioGroup, RadioProps, styled } from '@mui/material';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
+import "./chat.css";
+
 type IChatProps = {
     type: "text" | "choices" | "typing" | string,
     value: string | string[]
@@ -32,16 +34,16 @@ const ChatAI = (detailContent: IChatAIProps) => {
             <div className="flex items-center justify-center w-8 h-8 bg-gray-300 rounded-full mx-2 mt-1">
                 <span className="text-l font-bold text-gray-600">{name.charAt(0)}</span>
             </div>
-            <div className="flex items-start  w-2/3 max-w-2/3">
-                <div className="flex-col">
+            <div className="flex items-start w-3/4 max-w-3/4">
+                <div className="flex-col overflow-x-hidden">
                     <Typography variant="caption" display="block" className='text-gray-600 pl-1'>
                         {name}
                     </Typography>
-                    <div className="bg-customBGColor02 rounded-lg p-2 text-black">
+                    <div className="bg-customBGColor02 rounded-lg p-2 text-black ai-chat-container">
                         {content.map((item, i) => (
                             <div key={i}>
                                 {item.type === 'text' && (
-                                    !Array.isArray(item.value) && <MarkdownTextView rawText={item.value}></MarkdownTextView>
+                                    !Array.isArray(item.value) && <MarkdownTextView rawText={item.value} enableHTML />
                                 )}
                                 {item.type === 'choices' && (
                                     <FormControl>

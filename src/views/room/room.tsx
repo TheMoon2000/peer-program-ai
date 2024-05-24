@@ -437,6 +437,7 @@ export default function Room(props: Props) {
     // const currentCode = replaceCanvasImport(editor.current.getValue());
     const pyodide = pyodideRef.current;
     pyodide.registerJsModule("graphics", unthrow)
+    console.log('registered', unthrow)
     
     if (!pyodide) {
       alert("Browser doesn't support python!");
@@ -446,6 +447,15 @@ export default function Room(props: Props) {
     pyodide.canvas.setCanvas2D(
       document.querySelector("#canvas") as HTMLCanvasElement
     );
+
+    if (roomInfo.current.room.use_graphics) {
+      await pyodide.runPythonAsync(currentCode).catch((err) => {
+        let errMsg = `${err}`;
+        console.log(errMsg)
+      });
+      document.getElementById("canvas").style.height = '';
+      return
+    }
 
     setTestResults(undefined);
     isRunningTests.setValue(true);
