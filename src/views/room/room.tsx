@@ -412,6 +412,7 @@ export default function Room(props: Props) {
     if (!!response && !!response.data) {
       roomInfo.current.room.question_id = response.data.question_id;
       roomInfo.current.room.test_cases = response.data.test_cases;
+      roomInfo.current.room.use_graphics = response.data.use_graphics > 0;
       editor.current.getModel().setValue(response.data.starter_code);
       authorEditor.current.setValue(
         response.data.starter_code.replace(/[^\n]/g, "?")
@@ -431,7 +432,7 @@ export default function Room(props: Props) {
     // roomInfo.current. = response.data.description;
   };
 
-  const runCode = async () => {
+  const runCode = async (grade = true) => {
     const currentCode = editor.current.getValue()
 
     // const currentCode = replaceCanvasImport(editor.current.getValue());
@@ -454,6 +455,13 @@ export default function Room(props: Props) {
         console.log(errMsg)
       });
       document.getElementById("canvas").style.height = '';
+
+      if (grade) {
+        await axiosInstance.post(`/rooms/${roomInfo.current.room.id}/grade`).catch(err => {
+          console.warn(err)
+        })
+      }
+
       return
     }
 
@@ -537,6 +545,10 @@ export default function Room(props: Props) {
   };
 
   const runPythonRunCommand = useCallback(() => {
+    if (roomInfo.current.room.use_graphics) {
+      runCode(false)
+      return
+    }
     axiosInstance
       .post(`/rooms/${room_id}/create-server`, {
         email: localStorage.getItem("email"),
@@ -614,6 +626,7 @@ export default function Room(props: Props) {
     } else if (type === "question_update") {
       roomInfo.current.room.test_cases = e.question.test_cases
       roomInfo.current.room.question_id = e.question.question_id
+      roomInfo.current.room.use_graphics = e.question.use_graphics > 0
 
       enqueueSnackbar({
         message: `The coding problem is switched to "${e.question.title}".`,
@@ -747,6 +760,7 @@ export default function Room(props: Props) {
                       loading={isResettingTerminal.value}
                       sx={{ color: "#e0e0e0", borderColor: "#e0e0e050" }}
                       variant="outlined"
+                      disabled={roomInfo.current.room.use_graphics}
                       onClick={() => {
                         isResettingTerminal.setValue(true);
                         axiosInstance
@@ -769,7 +783,7 @@ export default function Room(props: Props) {
                           .finally(isResettingTerminal.onFalse);
                       }}
                     >
-                      Start A Collaborative Terminal Session
+                      {roomInfo.current.room.use_graphics ? "Terminal not available for graphics question" :  "Start A Collaborative Terminal Session"}
                     </LoadingButton>
                   </div>
                 )}
