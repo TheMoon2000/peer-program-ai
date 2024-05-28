@@ -43,7 +43,7 @@ const QuestionsDialog: React.FC<QuestionsDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-1 items-center gap-4">
+          <div className="max-h-96 overflow-y-auto grid grid-cols-1 items-center gap-4">
             {questions.length > 0 ? (
               questions.map((question) => (
                 <DialogClose asChild key={question.question_id}>
