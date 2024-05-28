@@ -76,6 +76,7 @@ function generateHue() {
 export default function Room(props: Props) {
   const { room_id } = useParams();
   const roomInfo = useRef<RoomInfo | null | undefined>();
+  const initialLoad = useRef(true);
   const isPageLoaded = useBoolean(false);
   const [terminalInfo, setTerminalInfo] = useState<
     { token: string; id: string } | null | undefined
@@ -199,6 +200,10 @@ export default function Room(props: Props) {
 
   // Step 1: Load room info
   useEffect(() => {
+    if (!initialLoad.current) {
+      return
+    }
+    initialLoad.current = false
     const userEmail = localStorage.getItem("email");
 
     loadPyodide({
@@ -360,6 +365,10 @@ export default function Room(props: Props) {
       } else {
         setTerminalInfo(null);
       }
+
+      window.addEventListener("beforeunload", e => {
+        e.preventDefault()
+      })
     }
   }, [isPageLoaded.value]);
 
@@ -449,7 +458,7 @@ export default function Room(props: Props) {
       document.querySelector("#canvas") as HTMLCanvasElement
     );
 
-    if (roomInfo.current.room.use_graphics) {
+    if (roomInfo.current.room.use_graphics || roomInfo.current.room.test_cases.length === 0) {
       await pyodide.runPythonAsync(currentCode).catch((err) => {
         let errMsg = `${err}`;
         console.log(errMsg)
