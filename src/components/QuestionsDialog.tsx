@@ -37,9 +37,9 @@ const QuestionsDialog: React.FC<QuestionsDialogProps> = ({
       <DialogContent className="">
         {/* <DialogContent className="sm:max-w-[425px]"> */}
         <DialogHeader>
-          <DialogTitle>Questions</DialogTitle>
+          <DialogTitle>Problems</DialogTitle>
           <DialogDescription>
-            Change the question that you would like to do.
+            Change the problem that you would like to do. Scroll down to see all of the problems.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">

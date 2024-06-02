@@ -369,6 +369,9 @@ export default function Room(props: Props) {
       window.addEventListener("beforeunload", e => {
         e.preventDefault()
       })
+      window.addEventListener("hashchange", e => {
+        e.preventDefault()
+      })
     }
   }, [isPageLoaded.value]);
 
@@ -377,6 +380,7 @@ export default function Room(props: Props) {
       rustpad.current.dispose();
     }
     rustpad.current?.dispose()
+    editor.current.setValue("")
     rustpad.current = new Rustpad({
       uri: `wss://rustpad.io/api/socket/${room_id}`,
       editor: editor.current,
@@ -401,6 +405,7 @@ export default function Room(props: Props) {
       },
     });
     authorRustpad.current?.dispose()
+    authorEditor.current.setValue("")
     authorRustpad.current = new Rustpad({
       uri: `wss://rustpad.io/api/socket/${room_id}-authors`,
       editor: authorEditor.current,
