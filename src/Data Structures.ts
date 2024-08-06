@@ -56,14 +56,15 @@ export interface RoomInfo {
   };
 
   meeting: {
-    participant_id: string | null; // Null is the user isn't in the room
-    meeting_id: string | null; // same as above
-    user_token: string | null; // same as above
+    meeting_id: string // zoom meeting id
+    zoom_url: string | null // Null is the user isn't in the room
     all_participants: {
-      participant_id: string;
-      name: string;
-    }[];
-    role: 0 | 1 | 2;
+      zoom_registrant_id: string
+      name: string
+      role: 0 | 1 | 2
+      index: number
+    }[]
+    role: 0 | 1 | 2
   };
 }
 

@@ -24,13 +24,6 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
 
-import {
-  DyteProvider,
-  useDyteClient,
-  useDyteMeeting,
-  useDyteSelector,
-} from "@dytesdk/react-web-core";
-
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 import "monaco-editor";
 import {
@@ -47,23 +40,15 @@ import { HOST, axiosInstance, rustpadInstance } from "@/Constants";
 import { Question, RoomInfo, TestResult } from "@/Data Structures";
 import TestCases from "../grading/test-cases";
 import Loading from "../loading/loading";
-import {
-  DyteAudioVisualizer,
-  DyteChat,
-  DyteGrid,
-  DyteMeeting,
-  DyteNameTag,
-  DyteParticipantTile,
-  DytePipToggle,
-} from "@dytesdk/react-ui-kit";
+
 import { ChatPlaceholder } from "./chat-placeholder";
 import QuestionsDialog from "@/components/QuestionsDialog";
 import { enqueueSnackbar, useSnackbar } from "notistack";
-import { DyteParticipant } from "@dytesdk/web-core";
 import { replaceCanvasImport } from "@/utils/helper";
 
 import * as unthrow from "@/graphics/unthrow";
 import MarkdownTextView from "@/components/MarkdownTextView/MarkdownTextView";
+import Router from 'next/router';
 
 interface Props {
   roomId: string;
@@ -102,8 +87,6 @@ export default function Room(props: Props) {
   const [questions, setQuestions] = useState<Question[]>();
   const snackbar = useSnackbar();
   const [participantLeftMessage, setParticipantLeftMessage] = useState<{ title: string, message: string }>(undefined)
-
-  const [meeting, initMeeting] = useDyteClient();
 
   const [updateState, setUpdateState] = useState(0);
   // const awsTranscribe = useRef<AWSTranscribe>();
@@ -206,6 +189,17 @@ export default function Room(props: Props) {
     initialLoad.current = false
     const userEmail = localStorage.getItem("email");
 
+    window.addEventListener("beforeunload", e => {
+      e.preventDefault()
+    })
+    window.addEventListener("close", e => {
+      e.preventDefault();
+    })
+    window.addEventListener("hashchange", e => {
+      console.log('hash change')
+      e.preventDefault()
+    })
+
     loadPyodide({
       indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/",
     }).then((p) => {
@@ -224,17 +218,6 @@ export default function Room(props: Props) {
         roomInfo.current = response.data as RoomInfo;
         console.log(roomInfo.current);
         setTestResults(roomInfo.current.room.test_results);
-
-        /* temporarily disabled to save api usage */
-        if (roomInfo.current.meeting.user_token) {
-          initMeeting({
-            authToken: roomInfo.current.meeting.user_token,
-            defaults: {
-              audio: true,
-              video: true,
-            },
-          }).then((m) => m?.joinRoom());
-        }
 
         isPageLoaded.setValue(true);
 
@@ -365,13 +348,6 @@ export default function Room(props: Props) {
       } else {
         setTerminalInfo(null);
       }
-
-      window.addEventListener("beforeunload", e => {
-        e.preventDefault()
-      })
-      window.addEventListener("hashchange", e => {
-        e.preventDefault()
-      })
     }
   }, [isPageLoaded.value]);
 
@@ -412,7 +388,7 @@ export default function Room(props: Props) {
       onConnected: () => console.log("author rustpad connected!"),
       onDisconnected: () => console.warn("author rustpad disconnected"),
     });
-  }, [editor.current, room_id]);
+  }, [editor.current, room_id, rustpadFailed]);
 
   // change question
   const handleQuestionChange = async (question: Question) => {
@@ -420,6 +396,7 @@ export default function Room(props: Props) {
       .patch(`/rooms/${room_id}/`, {
         question_id: question.question_id,
         name: localStorage.getItem("name"),
+        email: localStorage.getItem("email")
       })
       .catch((err) => console.error(err));
 
@@ -427,7 +404,8 @@ export default function Room(props: Props) {
       roomInfo.current.room.question_id = response.data.question_id;
       roomInfo.current.room.test_cases = response.data.test_cases;
       roomInfo.current.room.use_graphics = response.data.use_graphics > 0;
-      editor.current.getModel().setValue(response.data.starter_code);
+      editor.current.setValue("")
+      editor.current.setValue(response.data.starter_code);
       authorEditor.current.setValue(
         response.data.starter_code.replace(/[^\n]/g, "?")
       );
@@ -635,6 +613,7 @@ export default function Room(props: Props) {
         message: `Your partner has run the autograder.`,
         variant: "info",
       });
+      setUpdateState(Date.now())
     } else if (type === "terminal_started") {
       refreshTerminalDisplay(e.terminal_id, e.show_welcome_message);
     } else if (type === "question_update") {
@@ -653,13 +632,26 @@ export default function Room(props: Props) {
           e.question.starter_code.replace(/[^\n]/g, "?")
         );
       }
-
+      setTestResults(null)
       setUpdateState(Date.now())
 
     } else if (type === "leave_session") {
       setParticipantLeftMessage({ title: e.title, message: e.message })
+    } else if (type === "user_joined") {
+      // Refetch room info
+      const userEmail = localStorage.getItem("email");
+      axiosInstance.get(`/rooms/${room_id}?email=${userEmail}`).then(response => {
+        roomInfo.current = response.data
+        console.log('reloaded roomInfo', roomInfo.current)
+        setUpdateState(Date.now())
+      })
+    } else if (type === "zoom_expired") {
+      roomInfo.current.meeting.zoom_url = null
+      setUpdateState(Date.now())
+    } else {
+      console.warn("Unrecognized event:", type)
     }
-  }, [updateState, participantLeftMessage, refreshTerminalDisplay])
+  }, [updateState, participantLeftMessage, refreshTerminalDisplay, setTestResults])
 
   if (!isPageLoaded.value) {
     return <Loading text={"Loading room..."} />;
@@ -676,7 +668,6 @@ export default function Room(props: Props) {
       <Stack className="full-screen">
         <Navbar
           onRun={runPythonRunCommand}
-          meeting={meeting}
           roomInfo={roomInfo.current}
         ></Navbar>
         <Split
@@ -867,7 +858,6 @@ export default function Room(props: Props) {
           <Button variant="soft" color="primary" onClick={() => setParticipantLeftMessage(undefined)}>Got it</Button>
         </DialogActions>
       </Dialog>
-      {/* </DyteProvider> */}
     </>
   );
 }

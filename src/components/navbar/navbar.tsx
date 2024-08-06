@@ -15,9 +15,8 @@ import { axiosInstance } from "@/Constants";
 import { useSnackbar } from "notistack";
 
 interface Props {
-  meeting?: DyteClient;
-  onRun: () => void;
-  roomInfo: RoomInfo;
+  onRun: () => void
+  roomInfo: RoomInfo
 }
 
 export default function Navbar(props: Props) {
@@ -75,7 +74,7 @@ export default function Navbar(props: Props) {
           {props.roomInfo.meeting.all_participants.map((p) => (
             <span
               className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gray-500 ring-2 ring-white"
-              key={p.participant_id}
+              key={p.zoom_registrant_id}
             >
               <span className="text-sm font-medium leading-none text-white">
                 {/* {m.role === "user" ? name.slice(0, 2).toUpperCase() : "AI"} */}
@@ -95,27 +94,19 @@ export default function Navbar(props: Props) {
             alt=""
           /> */}
         </div>
-        {props.meeting && (
-          <>
-            {/* <DyteGrid meeting={props.meeting} style={{ height: "100%" }} /> */}
-            <button
-              type="button"
-              className="ml-3 inline-flex items-center rounded-md bg-zinc-50 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
-              // onClick={() => props.meeting.participants.pip.enable()}
-              // disabled={!!props.meeting.participants}
-              onClick={showVideo.onTrue}
-            >
-              Video Settings
-              {/* <DytePipToggle
-            meeting={props.meeting}
-            className="ml-3 inline-flex items-center rounded-md bg-zinc-50 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
-          /> */}
-            </button>
-          </>
-        )}
+        <button
+            type="button"
+            className="ml-3 inline-flex items-center rounded-md bg-zinc-50 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-zinc-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300 disabled:opacity-40 disabled:hover:bg-zinc-50 disabled:cursor-not-allowed"
+            disabled={!props.roomInfo.meeting.zoom_url}
+            onClick={() => {
+              window.open(props.roomInfo.meeting.zoom_url, "_blank")
+            }}
+          >
+            Join Video Call
+          </button>
       </div>
       <div style={{flexGrow: 1, flexShrink: 1, height: "100px", position: "relative"}}>
-        {props.meeting && <DyteGrid meeting={props.meeting} style={{ height: "100%" }} />}
+        
       </div>
       {(props.roomInfo.meeting.role === 1 || props.roomInfo.meeting.role === 2) && <div className="text-white flex flex-row justify-center items-center gap-x-2">
         <span>Your Role: <b className="text-sky-100 hover:underline cursor-pointer" onClick={showUserRoleDialog.onTrue}>{roleName}</b></span>
@@ -128,30 +119,6 @@ export default function Navbar(props: Props) {
       >
         Run Code
       </button>
-      <Dialog open={showVideo.value} fullScreen>
-        {props.meeting ? (
-          // <DyteProvider value={props.meeting}>
-          <>
-            <DyteMeeting
-              mode="fill"
-              meeting={props.meeting}
-              style={{ height: "100%" }}
-              // className="absolute w-0 h-0 overflow-hidden -z-10"
-            />
-            {/* <DytePipToggle meeting={props.meeting} /> */}
-          </>
-        ) : (
-          // </DyteProvider>
-          <div className="flex-grow flex justify-center items-center">
-            Visitors cannot join video call.
-          </div>
-        )}
-        <DialogActions sx={{ justifyContent: "center" }}>
-          <Button variant="outlined" onClick={showVideo.onFalse}>
-            Hide
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {!!props.roomInfo.meeting.role && <Dialog open={showUserRoleDialog.value} onClose={showUserRoleDialog.onFalse} fullWidth maxWidth="sm">
         <DialogTitle>{`The ${["", "Driver", "Navigator"][props.roomInfo.meeting.role]}`}</DialogTitle>

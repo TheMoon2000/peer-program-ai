@@ -15,14 +15,12 @@ import Checkbox from "@mui/material/Checkbox";
 import { useBoolean } from "src/hooks/use-boolean";
 import Stack from "@mui/material/Stack";
 import { addUserToRoom } from "@/actions/userActions";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader } from "lucide-react";
-import Hero from "./Hero";
-import Features from "./Features";
 import { isDisabled } from "@/utils/helper";
-import { axiosInstance, formatTimeInterval } from "@/Constants";
-import { Link } from "@mui/material";
+import { axiosInstance, formatTimeInterval, HOST } from "@/Constants";
+import { CircularProgress, Link } from "@mui/material";
 import LoadingButton from "@mui/lab/LoadingButton";
 import MarkdownTextView from "@/components/MarkdownTextView/MarkdownTextView";
 
@@ -35,10 +33,30 @@ export default function LandingPage() {
   const showTermDialog = useBoolean(false)
   const showErrorDialog = useBoolean(false)
   const [history, setHistory] = useState<{room_id: string, last_visited: string, partner: string | null}[]>()
-  // const rooms = await getRooms();
-  // const users = await getUsers();
+  const queueSocket = useRef<WebSocket | undefined>()
+  const [currentQueueNumber, setCurrentQueueNumber] = useState<number | undefined>()
 
-  // Event handler for adding a new todo
+  const joinQueue = useCallback(() => {
+    localStorage.setItem("email", email);
+    localStorage.setItem("name", name);
+
+    queueSocket.current = new WebSocket(`wss://${HOST}/queue/socket?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`)
+    queueSocket.current.onmessage = e => {
+      const data = JSON.parse(e.data)
+      console.log('received', data)
+      if (data.order !== undefined) {
+        setCurrentQueueNumber(data.order)
+      } else if (data.room_id) {
+        setCurrentQueueNumber(undefined)
+        window.location.replace(`/rooms/${data.room_id}`)
+      }
+    }
+    queueSocket.current.onerror = e => {
+      console.warn(e)
+      setCurrentQueueNumber(undefined)
+    }
+  }, [email, name, setCurrentQueueNumber])
+
   const handleAdd = async (e) => {
     e.preventDefault();
     localStorage.setItem("email", email);
@@ -47,16 +65,9 @@ export default function LandingPage() {
     // if mobile
     const userAgent = navigator.userAgent || navigator.vendor;
 
-    if (
-      /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
-        userAgent.toLowerCase()
-      )
-    ) {
-      // reroute to landing page
+    if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase())) {
       router.push(`/mobile`);
     } else {
-      // else
-
       const history = await axiosInstance.get(`/rooms/recent-activity?email=${email}`).then(r => r.data.history).catch(() => {
         showErrorDialog.setValue(true)
         return null
@@ -101,9 +112,7 @@ export default function LandingPage() {
             </p>
             <form className="mx-auto mt-10 flex flex-col max-w-lg gap-x-4 gap-y-4">
               <div className="flex max-w-lg gap-x-4">
-                <label htmlFor="email-address" className="sr-only">
-                  Email address
-                </label>
+                <label htmlFor="email-address" className="sr-only">Email address</label>
                 <input
                   id="name"
                   name="name"
@@ -132,10 +141,11 @@ export default function LandingPage() {
                     isDisabled(agree, email, name)
                     // !agree.value || email.length === 0 || name.length === 0
                   }
-                  style={{
-                    opacity: isDisabled(agree, email, name) ? 0.5 : 1,
+                  style={{opacity: isDisabled(agree, email, name) ? 0.5 : 1}}
+                  onClick={e => {
+                    e.preventDefault() 
+                    joinQueue()
                   }}
-                  onClick={(e) => handleAdd(e)}
                 >
                   Enter
                 </button>
@@ -176,18 +186,14 @@ export default function LandingPage() {
               aria-hidden="true"
             >
               <circle
-                cx={512}
-                cy={512}
-                r={512}
+                cx={512} cy={512} r={512}
                 fill="url(#759c1415-0410-454c-8f7c-9a820de03641)"
                 fillOpacity="0.7"
               />
               <defs>
                 <radialGradient
                   id="759c1415-0410-454c-8f7c-9a820de03641"
-                  cx={0}
-                  cy={0}
-                  r={1}
+                  cx={0} cy={0} r={1}
                   gradientUnits="userSpaceOnUse"
                   gradientTransform="translate(512 512) rotate(90) scale(512)"
                 >
@@ -259,9 +265,24 @@ You can read this message again any time from a link at the bottom of the landin
         <Button variant="outlined" onClick={() => setHistory(undefined)}>Cancel</Button>
         <Button variant="contained" color="primary" onClick={async () => {
           setLoading(true)
-          const room = await addUserToRoom(email, name);
-          router.push(`/rooms/${room}`);
+          joinQueue()
         }}>Begin New Session</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={currentQueueNumber !== undefined} maxWidth="xs" fullWidth>
+        <DialogTitle>Waiting for room</DialogTitle>
+        <DialogContent>
+          <Stack alignItems="center" rowGap={2}>
+            <CircularProgress />
+            <div style={{textAlign: "center"}}>{currentQueueNumber === 0 ? "Preparing your room..." : `Position in queue: ${currentQueueNumber}`}</div>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="outlined" onClick={() => {
+            queueSocket.current.close()
+            setTimeout(() => setCurrentQueueNumber(undefined), 500)
+          }}>Exit Queue</Button>
         </DialogActions>
       </Dialog>
     </>

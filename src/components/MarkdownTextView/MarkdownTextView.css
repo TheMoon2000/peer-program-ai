@@ -22,6 +22,7 @@
 
 .markdown-view > ul {
     padding-inline-start: 20px;
+    list-style: unset;
 }
 
 .markdown-view li ul {
