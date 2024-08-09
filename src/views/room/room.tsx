@@ -189,6 +189,10 @@ export default function Room(props: Props) {
     initialLoad.current = false
     const userEmail = localStorage.getItem("email");
 
+    if ("Notification" in window) {
+      Notification.requestPermission()
+    }
+
     window.addEventListener("beforeunload", e => {
       e.preventDefault()
     })
@@ -644,6 +648,7 @@ export default function Room(props: Props) {
         roomInfo.current = response.data
         console.log('reloaded roomInfo', roomInfo.current)
         setUpdateState(Date.now())
+        new Notification("PearProgram", { body: "Your partner has joined the session." })
       })
     } else if (type === "zoom_expired") {
       roomInfo.current.meeting.zoom_url = null

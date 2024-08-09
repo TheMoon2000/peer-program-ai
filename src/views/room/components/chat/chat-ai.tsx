@@ -1,5 +1,5 @@
 import MarkdownTextView from '@/components/MarkdownTextView/MarkdownTextView';
-import { FormControl, FormControlLabel, Radio, RadioGroup, RadioProps, styled } from '@mui/material';
+import { Button, FormControl, FormControlLabel, Radio, RadioGroup, RadioProps, styled } from '@mui/material';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import "./chat.css";
@@ -46,13 +46,13 @@ const ChatAI = (detailContent: IChatAIProps) => {
                                     !Array.isArray(item.value) && <MarkdownTextView rawText={item.value} enableHTML />
                                 )}
                                 {item.type === 'choices' && (
+                                    item.value.length > 1 ?
                                     <FormControl>
                                         <RadioGroup
                                             aria-labelledby="demo-customized-radios"
                                             name="customized-radios"
                                             onChange={handleChange}
                                         >
-
                                             {Array.isArray(item.value) && item.value.map((option, j) => (
                                                 item.choice_index !== undefined ?
                                                     <FormControlLabel
@@ -76,6 +76,11 @@ const ChatAI = (detailContent: IChatAIProps) => {
                                             ))}
                                         </RadioGroup>
                                     </FormControl>
+                                    :
+                                    <Button variant="contained" size="small" disabled={typeof item.choice_index === "number"} sx={{mt: 1}} onClick={() => {
+                                        const doActionInfo = { action: "make_choice", message_id: messageId, content_index: i, choice_index: 0 }
+                                        handleChooseAction(JSON.stringify(doActionInfo))
+                                    }}>{item.value[0]}</Button>
                                 )}
                             </div>
                         ))}
