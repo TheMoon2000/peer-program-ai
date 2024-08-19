@@ -408,11 +408,11 @@ export default function Room(props: Props) {
       roomInfo.current.room.question_id = response.data.question_id;
       roomInfo.current.room.test_cases = response.data.test_cases;
       roomInfo.current.room.use_graphics = response.data.use_graphics > 0;
-      editor.current.setValue("")
-      editor.current.setValue(response.data.starter_code);
-      authorEditor.current.setValue(
-        response.data.starter_code.replace(/[^\n]/g, "?")
-      );
+      // editor.current.setValue("")
+      // editor.current.setValue(response.data.starter_code);
+      // authorEditor.current.setValue(
+      //   response.data.starter_code.replace(/[^\n]/g, "?")
+      // );
       setTestResults(null);
     } else {
       snackbar.enqueueSnackbar({
@@ -630,12 +630,13 @@ export default function Room(props: Props) {
         variant: "info",
       });
 
-      if (e.email === localStorage.getItem("email")) {
-        editor.current.getModel().setValue(e.question.starter_code);
-        authorEditor.current.setValue(
-          e.question.starter_code.replace(/[^\n]/g, "?")
-        );
-      }
+      // In the new implementation, the backend takes care of swapping the code
+      // if (e.email === localStorage.getItem("email")) {
+      //   editor.current.getModel().setValue(e.question.starter_code);
+      //   authorEditor.current.setValue(
+      //     e.question.starter_code.replace(/[^\n]/g, "?")
+      //   );
+      // }
       setTestResults(null)
       setUpdateState(Date.now())
 
