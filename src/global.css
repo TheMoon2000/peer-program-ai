@@ -161,6 +161,28 @@
   box-shadow: 0px 2px 10px 2px rgba(0, 0, 0, 0.1);
 }
 /* 自定义滚动条样式 */
+::-webkit-scrollbar {
+  -webkit-appearance: none;
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #f7fafc;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #DADADA;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #BDC0C5;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: #A3A3A3;
+}
+
 .scrollbar::-webkit-scrollbar {
   width: 6px;
 }

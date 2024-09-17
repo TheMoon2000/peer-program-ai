@@ -31,7 +31,7 @@ const QuestionsDialog: React.FC<QuestionsDialogProps> = ({
     <Dialog>
       <DialogTrigger asChild>
         <div className="p-4">
-          <Button variant="outline">Switch Coding Problem</Button>
+          <Button variant="outline">Select Coding Problem</Button>
         </div>
       </DialogTrigger>
       <DialogContent className="">
