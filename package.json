@@ -55,7 +55,7 @@
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.0",
     "remark-math": "^6.0.0",
-    "rustpad-wasm": "file:./rustpad-wasm/pkg",
+    "rustpad-wasm": "file:rustpad-wasm/pkg",
     "simplebar-react": "^3.2.4",
     "slick-carousel": "^1.8.1",
     "stylis-plugin-rtl": "^2.1.1",
