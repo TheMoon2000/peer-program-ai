@@ -119,6 +119,12 @@ export default function Navbar(props: Props) {
       >
         Run Code
       </button>
+      <a 
+        className="ml-3 inline-flex items-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+        href="https://forms.gle/s6uH68oB3C85q9yb7" 
+        target="_blank">
+          Report Issue
+      </a>
 
       {!!props.roomInfo.meeting.role && <Dialog open={showUserRoleDialog.value} onClose={showUserRoleDialog.onFalse} fullWidth maxWidth="sm">
         <DialogTitle>{`The ${["", "Driver", "Navigator"][props.roomInfo.meeting.role]}`}</DialogTitle>

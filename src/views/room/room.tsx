@@ -732,16 +732,16 @@ export default function Room(props: Props) {
                   {/* <Grading editor={editor.current} /> */}
                   {/* <div id="author-editor" className="relative" /> */}
                   <Box sx={{ overflowY: "auto" }}>
+                    <QuestionsDialog
+                      questions={questions}
+                      handleQuestionChange={handleQuestionChange}
+                    />
                     <TestCases
                       useGraphics={roomInfo.current.room.use_graphics}
                       onRun={runCode}
                       cases={roomInfo.current?.room.test_cases}
                       results={testResults}
                       isWaiting={isRunningTests.value}
-                    />
-                    <QuestionsDialog
-                      questions={questions}
-                      handleQuestionChange={handleQuestionChange}
                     />
                     <canvas ref={canvasRef}></canvas>
                   </Box>
