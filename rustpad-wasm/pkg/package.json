@@ -7,13 +7,11 @@
   "files": [
     "rustpad_wasm_bg.wasm",
     "rustpad_wasm.js",
-    "rustpad_wasm_bg.js",
     "rustpad_wasm.d.ts"
   ],
   "module": "rustpad_wasm.js",
   "types": "rustpad_wasm.d.ts",
   "sideEffects": [
-    "./rustpad_wasm.js",
     "./snippets/*"
   ]
 }
