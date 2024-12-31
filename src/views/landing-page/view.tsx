@@ -30,80 +30,77 @@ export default function LandingPage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const showTermDialog = useBoolean(false)
-  const showErrorDialog = useBoolean(false)
-  const [history, setHistory] = useState<{room_id: string, last_visited: string, partner: string | null}[]>()
-  const queueSocket = useRef<WebSocket | undefined>()
-  const [currentQueueNumber, setCurrentQueueNumber] = useState<number | undefined>()
-
-  const userAgent = navigator.userAgent;
-  let newlineCharacter = '\n'; // Default to '\n' for compatibility
-
-  // Detect the OS using userAgent
-  if (userAgent.indexOf('Win') !== -1) {
-      newlineCharacter = '\r\n';
-  } else if (userAgent.indexOf('Mac') !== -1) {
-      newlineCharacter = '\n';
-  } else if (userAgent.indexOf('Linux') !== -1) {
-      newlineCharacter = '\n';
-  } else if (userAgent.indexOf('Android') !== -1) {
-      newlineCharacter = '\n';
-  } else if (userAgent.indexOf('like Mac') !== -1) {
-      newlineCharacter = '\n';
-  }
+  const showTermDialog = useBoolean(false);
+  const showErrorDialog = useBoolean(false);
+  const [history, setHistory] =
+    useState<
+      { room_id: string; last_visited: string; partner: string | null }[]
+    >();
+  const queueSocket = useRef<WebSocket | undefined>();
+  const [currentQueueNumber, setCurrentQueueNumber] = useState<
+    number | undefined
+  >();
 
   const joinQueue = useCallback(() => {
     localStorage.setItem("email", email);
     localStorage.setItem("name", name);
-    localStorage.setItem("newlineCharacter", newlineCharacter)
 
-    queueSocket.current = new WebSocket(`wss://${HOST}/queue/socket?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&newlineCharacter=${encodeURIComponent(newlineCharacter)}`)
-    queueSocket.current.onmessage = e => {
-      const data = JSON.parse(e.data)
-      console.log('received', data)
+    queueSocket.current = new WebSocket(
+      `wss://${HOST}/queue/socket?email=${encodeURIComponent(
+        email
+      )}&name=${encodeURIComponent(name)}`
+    );
+    queueSocket.current.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      console.log("received", data);
       if (data.order !== undefined) {
-        setCurrentQueueNumber(data.order)
+        setCurrentQueueNumber(data.order);
       } else if (data.room_id) {
-        setCurrentQueueNumber(undefined)
-        window.location.replace(`/rooms/${data.room_id}`)
+        setCurrentQueueNumber(undefined);
+        window.location.replace(`/rooms/${data.room_id}`);
       }
-    }
-    queueSocket.current.onerror = e => {
-      console.warn(e)
-      setCurrentQueueNumber(undefined)
-    }
-  }, [email, name, setCurrentQueueNumber])
+    };
+    queueSocket.current.onerror = (e) => {
+      console.warn(e);
+      setCurrentQueueNumber(undefined);
+    };
+  }, [email, name, setCurrentQueueNumber]);
 
   const handleAdd = async (e) => {
     e.preventDefault();
     localStorage.setItem("email", email);
     localStorage.setItem("name", name);
-    localStorage.setItem("newlineCharacter", newlineCharacter)
     setLoading(true);
     // if mobile
     const userAgent = navigator.userAgent || navigator.vendor;
 
-    if (/android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase())) {
+    if (
+      /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+        userAgent.toLowerCase()
+      )
+    ) {
       router.push(`/mobile`);
     } else {
-      const history = await axiosInstance.get(`/rooms/recent-activity?email=${email}`).then(r => r.data.history).catch(() => {
-        showErrorDialog.setValue(true)
-        return null
-      })
-      
+      const history = await axiosInstance
+        .get(`/rooms/recent-activity?email=${email}`)
+        .then((r) => r.data.history)
+        .catch(() => {
+          showErrorDialog.setValue(true);
+          return null;
+        });
+
       if (history === null) {
-        return
+        return;
       }
-      
+
       if (history.length > 0) {
-        setLoading(false)
-        setHistory(history)
-        return
+        setLoading(false);
+        setHistory(history);
+        return;
       } else {
         const room = await addUserToRoom(email, name);
         router.push(`/rooms/${room}`);
       }
- 
     }
   };
 
@@ -115,8 +112,52 @@ export default function LandingPage() {
     );
   }
 
+  // mark - start
+  const [showPreAssessmentPopup, setShowPreAssessmentPopup] = useState(true);
+  const PreAssessmentPopup = ({
+    isVisible,
+    onClose,
+  }: {
+    isVisible: boolean;
+    onClose: () => void;
+  }) => {
+    if (!isVisible) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+        <div className="bg-gray-800 text-white p-8 rounded-lg shadow-lg max-w-xl w-full text-center">
+          <h2 className="text-2xl font-bold mb-8">Pre-Assessment Required</h2>
+          <p className="text-lg mb-8">
+            In order to participate in this study you first need to complete the
+            pre-assessment. If you have already completed it, click continue.
+            Otherwise, please complete the pre-assessment now.
+          </p>
+          <div className="flex justify-around">
+            <button
+              onClick={onClose}
+              className="inline-flex items-center justify-center rounded-md bg-zinc-50 px-5 py-3 text-lg font-semibold text-gray-700 shadow-sm hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-300"
+            >
+              Continue
+            </button>
+            <button
+              onClick={() => router.push("/pre-assessment")}
+              className="inline-flex items-center justify-center rounded-md bg-blue-500 px-5 py-3 text-lg font-semibold text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-300"
+            >
+              Complete The Pre-Assessment
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  // mark - end
+
   return (
     <>
+      <PreAssessmentPopup
+        isVisible={showPreAssessmentPopup}
+        onClose={() => setShowPreAssessmentPopup(false)}
+      />
       {/* <Hero></Hero> */}
       {/* <Features></Features> */}
       <div className="bg-white py-16 sm:py-24">
@@ -126,11 +167,14 @@ export default function LandingPage() {
               Join Code In Place's PearProgram.
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-center text-lg leading-8 text-gray-300">
-              Get paired up with a partner now! Be sure to enter the same email you used for Code in Place. You’ll need to allow video and audio permissions.
+              Get paired up with a partner now! Be sure to enter the same email
+              you used for Code in Place.
             </p>
-            <form className="mx-auto mt-10 flex flex-col max-w-lg gap-x-4 gap-y-4">
-              <div className="flex max-w-lg gap-x-4">
-                <label htmlFor="email-address" className="sr-only">Email address</label>
+            <form className="mx-auto mt-10 flex flex-col max-w-lg gap-y-4">
+              <div className="flex flex-col max-w-lg gap-y-4">
+                <label htmlFor="email-address" className="sr-only">
+                  Email address
+                </label>
                 <input
                   id="name"
                   name="name"
@@ -153,20 +197,6 @@ export default function LandingPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
-                <button
-                  className="flex-none rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                  disabled={
-                    isDisabled(agree, email, name)
-                    // !agree.value || email.length === 0 || name.length === 0
-                  }
-                  style={{opacity: isDisabled(agree, email, name) ? 0.5 : 1}}
-                  onClick={e => {
-                    e.preventDefault() 
-                    joinQueue()
-                  }}
-                >
-                  Enter
-                </button>
               </div>
               <div className="relative flex items-start">
                 <div className="flex h-6 items-center">
@@ -180,14 +210,38 @@ export default function LandingPage() {
                   />
                 </div>
                 <div className="ml-3 text-sm leading-6">
-                  <label htmlFor="comments" className="font-medium text-white">
-                    Acknowledgement
-                  </label>
                   <p id="comments-description" className="text-white">
-                    I agree to follow the Code In Place guidelines and accept the <span onClick={showTermDialog.onTrue} style={{color: "#c6f0ff", fontWeight: 600, cursor: "pointer"}} className="hover:underline">research conditions</span>.
+                    By checking this box, you agree to follow the Code In Place
+                    guidelines and accept the{" "}
+                    <span
+                      onClick={showTermDialog.onTrue}
+                      style={{
+                        color: "#c6f0ff",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                      className="hover:underline"
+                    >
+                      research conditions
+                    </span>
+                    .
                   </p>
                 </div>
               </div>
+              <button
+                className="self-center w-1/2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm hover:bg-gray-300 focus:outline-none"
+                disabled={
+                  isDisabled(agree, email, name)
+                  // !agree.value || email.length === 0 || name.length === 0
+                }
+                style={{ opacity: isDisabled(agree, email, name) ? 0.5 : 1 }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  joinQueue();
+                }}
+              >
+                Submit
+              </button>
               {/* <FormControlLabel
                 label="I understand the terms of service."
                 control={
@@ -198,13 +252,13 @@ export default function LandingPage() {
                 }
               /> */}
             </form>
-            <div className="flex justify-center">
-              <a 
-                href="https://forms.gle/s6uH68oB3C85q9yb7" 
+            <div className="absolute bottom-0 left-0 right-0 flex justify-center mb-4">
+              <a
+                href="https://forms.gle/s6uH68oB3C85q9yb7"
                 target="_blank"
-                className="flex-none rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                >
-                  Report Issue
+                className="text-sm font-semibold text-[#c6f0ff] hover:underline"
+              >
+                Report Issue
               </a>
             </div>
             <svg
@@ -213,14 +267,18 @@ export default function LandingPage() {
               aria-hidden="true"
             >
               <circle
-                cx={512} cy={512} r={512}
+                cx={512}
+                cy={512}
+                r={512}
                 fill="url(#759c1415-0410-454c-8f7c-9a820de03641)"
                 fillOpacity="0.7"
               />
               <defs>
                 <radialGradient
                   id="759c1415-0410-454c-8f7c-9a820de03641"
-                  cx={0} cy={0} r={1}
+                  cx={0}
+                  cy={0}
+                  r={1}
                   gradientUnits="userSpaceOnUse"
                   gradientTransform="translate(512 512) rotate(90) scale(512)"
                 >
@@ -232,12 +290,17 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
-      
-      <Dialog open={showTermDialog.value} onClose={showTermDialog.onFalse} maxWidth="md" fullWidth >
+
+      <Dialog
+        open={showTermDialog.value}
+        onClose={showTermDialog.onFalse}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>Terms of Service</DialogTitle>
-        <DialogContent style={{fontWeight: "unset"}}>
-            
-          <MarkdownTextView rawText={`
+        <DialogContent style={{ fontWeight: "unset" }}>
+          <MarkdownTextView
+            rawText={`
 **Pear Program IS A RESEARCH PROJECT**
 
 We are building Pear Program to learn about pair programming. The information we gather from your engagement with Pear Program enables our research team to understand how students learn coding and collaborative skills in CS contexts.. The knowledge we gain through Pear Program is available to inform students' decisions, teaching and administration at Stanford, and the accumulation of scientific knowledge about learning and collaboration generally.
@@ -251,23 +314,39 @@ While we cannot guarantee that you will receive any benefits from using Pear Pro
 Our commitments: We use our research findings to continually improve Pear Program and contribute to public discussion of educational improvement at Stanford and worldwide. In doing our work we consider and analyze data and report research findings at the aggregate level only.
 
 You can read this message again any time from a link at the bottom of the landing page. If you have questions about this research please contact Pear Program team member Maxwell at Pear mbigman@stanford.edu. If you have concerns about this research and would like to speak with someone independent of the research team, you may contact the Stanford IRB at irb2-manager@lists.stanford.edu.
-`}/>
-
+`}
+          />
         </DialogContent>
         <DialogActions>
-          <Button variant="soft" color="primary" onClick={showTermDialog.onFalse}>Close</Button>
+          <Button
+            variant="soft"
+            color="primary"
+            onClick={showTermDialog.onFalse}
+          >
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
 
       <Dialog open={showErrorDialog.value} onClose={showErrorDialog.onFalse}>
         <DialogTitle>Unable to Connect</DialogTitle>
-        <DialogContent>We were unable to establish a connection to the server. Please check your network connection.</DialogContent>
+        <DialogContent>
+          We were unable to establish a connection to the server. Please check
+          your network connection.
+        </DialogContent>
         <DialogActions>
-          <Button variant="outlined" onClick={showErrorDialog.onFalse}>Cancel</Button>
-          <Button variant="soft" onClick={(e) => {
-            showErrorDialog.onFalse()
-            handleAdd(e)
-          }}>Retry</Button>
+          <Button variant="outlined" onClick={showErrorDialog.onFalse}>
+            Cancel
+          </Button>
+          <Button
+            variant="soft"
+            onClick={(e) => {
+              showErrorDialog.onFalse();
+              handleAdd(e);
+            }}
+          >
+            Retry
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -275,25 +354,51 @@ You can read this message again any time from a link at the bottom of the landin
         <DialogTitle>Recent Activity Found</DialogTitle>
         <DialogContent>
           <Typography>
-            Our records indicate that you've been in the following session(s) for the past 24 hours. Would you like to return to one of them, or begin a new session?
+            Our records indicate that you've been in the following session(s)
+            for the past 24 hours. Would you like to return to one of them, or
+            begin a new session?
           </Typography>
           <Stack direction="column" alignItems="stretch" py={2} rowGap={1}>
-            {history?.map(h => <Link key={h.room_id} href={`/rooms/${h.room_id}`} underline="none" sx={{display: "inline-block", width: "100%"}}>
-              <Button variant="soft" color="primary" fullWidth sx={{width: "100%", justifyContent: "flex-start"}}>
-                <Stack alignItems="start">
-                  <Typography fontWeight={500}>{`Partner: ${h.partner ?? "None"}`}</Typography>
-                  <Typography variant="caption">{`Last visited: ${formatTimeInterval(Date.now() - Date.parse(h.last_visited))} ago`}</Typography>
-                </Stack>
-              </Button>
-            </Link>)}
+            {history?.map((h) => (
+              <Link
+                key={h.room_id}
+                href={`/rooms/${h.room_id}`}
+                underline="none"
+                sx={{ display: "inline-block", width: "100%" }}
+              >
+                <Button
+                  variant="soft"
+                  color="primary"
+                  fullWidth
+                  sx={{ width: "100%", justifyContent: "flex-start" }}
+                >
+                  <Stack alignItems="start">
+                    <Typography fontWeight={500}>{`Partner: ${
+                      h.partner ?? "None"
+                    }`}</Typography>
+                    <Typography variant="caption">{`Last visited: ${formatTimeInterval(
+                      Date.now() - Date.parse(h.last_visited)
+                    )} ago`}</Typography>
+                  </Stack>
+                </Button>
+              </Link>
+            ))}
           </Stack>
         </DialogContent>
         <DialogActions>
-        <Button variant="outlined" onClick={() => setHistory(undefined)}>Cancel</Button>
-        <Button variant="contained" color="primary" onClick={async () => {
-          setLoading(true)
-          joinQueue()
-        }}>Begin New Session</Button>
+          <Button variant="outlined" onClick={() => setHistory(undefined)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={async () => {
+              setLoading(true);
+              joinQueue();
+            }}
+          >
+            Begin New Session
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -302,14 +407,23 @@ You can read this message again any time from a link at the bottom of the landin
         <DialogContent>
           <Stack alignItems="center" rowGap={2}>
             <CircularProgress />
-            <div style={{textAlign: "center"}}>{currentQueueNumber === 0 ? "Preparing your room..." : `Position in queue: ${currentQueueNumber}`}</div>
+            <div style={{ textAlign: "center" }}>
+              {currentQueueNumber === 0
+                ? "Preparing your room..."
+                : `Position in queue: ${currentQueueNumber}`}
+            </div>
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button variant="outlined" onClick={() => {
-            queueSocket.current.close()
-            setTimeout(() => setCurrentQueueNumber(undefined), 500)
-          }}>Exit Queue</Button>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              queueSocket.current.close();
+              setTimeout(() => setCurrentQueueNumber(undefined), 500);
+            }}
+          >
+            Exit Queue
+          </Button>
         </DialogActions>
       </Dialog>
     </>
