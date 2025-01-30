@@ -1,6 +1,5 @@
 import dynamic from "next/dynamic";
 
-// Dynamically import the `PreAssessment` component and disable SSR
 const PreAssessment = dynamic(() => import("../assessment"), {
   ssr: false,
 });
