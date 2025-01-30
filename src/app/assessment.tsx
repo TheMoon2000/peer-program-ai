@@ -7,35 +7,35 @@ import React, {
   useRef,
   useState,
 } from "react";
-import * as monaco from "monaco-editor"; // uses window
+import * as monaco from "monaco-editor";
 import { ursaTheme } from "@/functionality/Constants";
-import { Terminal } from "xterm"; // uses window
+import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import "xterm/css/xterm.css";
 import Pre from "@lobehub/ui/es/mdx/Pre";
-import { loadPyodide } from "pyodide"; // uses window
+import { loadPyodide } from "pyodide";
 import emailjs from "emailjs-com";
 
-const PreAssessmentContext = createContext<any>(null);
-export const usePreAssessment = () => useContext(PreAssessmentContext);
+const AssessmentContext = createContext<any>(null);
+export const useAssessment = () => useContext(AssessmentContext);
 
 // Provider to manage the shared editor and terminal instances
-const PreAssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
+const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const terminalInstance = useRef<Terminal | null>(null);
 
   return (
-    <PreAssessmentContext.Provider value={{ editorRef, terminalInstance }}>
+    <AssessmentContext.Provider value={{ editorRef, terminalInstance }}>
       {children}
-    </PreAssessmentContext.Provider>
+    </AssessmentContext.Provider>
   );
 };
 
 // NavBar for displaying the title and action buttons
 const NavBar = () => {
-  const { editorRef, terminalInstance } = usePreAssessment();
+  const { editorRef, terminalInstance } = useAssessment();
   const pyodideRef = useRef<any>(null);
   const [isDropdownVisible, setDropdownVisible] = useState(false); // new
   const dropdownRef = useRef<HTMLDivElement | null>(null); // new
@@ -156,49 +156,63 @@ const NavBar = () => {
 const Timer = ({
   selectedQuestion,
   onTimeUp,
-  stopTimer,
+  assessmentType,
 }: {
   selectedQuestion: number | null;
   onTimeUp: () => void;
-  stopTimer: boolean;
+  assessmentType: "pre" | "post";
 }) => {
-  const totalTime = 15 * 60;
+  const totalTime = 25 * 60; // 25 minutes in seconds
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    if (selectedQuestion !== null && timeLeft === null) {
-      const savedStartTime = localStorage.getItem("timerStartTime");
+    if (selectedQuestion !== null) {
+      const timerEnded = localStorage.getItem(`${assessmentType}_timerEnded`);
+
+      // If the timer has already ended, set timeLeft to 0 and exit
+      if (timerEnded === "true") {
+        setTimeLeft(0);
+        return;
+      }
+
+      const savedStartTime = localStorage.getItem(
+        `${assessmentType}_timerStartTime`
+      );
       if (savedStartTime) {
         const elapsed = Math.floor(
-          (Date.now() - parseInt(savedStartTime)) / 1000
+          (Date.now() - parseInt(savedStartTime, 10)) / 1000
         );
         setTimeLeft(Math.max(totalTime - elapsed, 0));
       } else {
-        localStorage.setItem("timerStartTime", Date.now().toString());
+        localStorage.setItem(
+          `${assessmentType}_timerStartTime`,
+          Date.now().toString()
+        );
         setTimeLeft(totalTime);
       }
+    } else {
+      setTimeLeft(null); // Reset if no question is selected
+      localStorage.removeItem(`${assessmentType}_timerStartTime`);
     }
   }, [selectedQuestion]);
 
   useEffect(() => {
-    if (stopTimer) {
-      localStorage.removeItem("timerStartTime");
+    if (timeLeft === null || timeLeft <= 0) {
+      if (timeLeft === 0) {
+        console.log("Time's up!");
+        onTimeUp(); // Notify parent component
+        localStorage.setItem(`${assessmentType}_timerEnded`, "true"); // Persist end state
+        localStorage.removeItem(`${assessmentType}_timerStartTime`); // Clear the start time
+      }
       return;
     }
 
-    if (timeLeft === 0) {
-      onTimeUp();
-      localStorage.removeItem("timerStartTime");
-      return;
-    }
+    const timerId = setInterval(() => {
+      setTimeLeft((prev) => (prev !== null ? prev - 1 : null));
+    }, 1000);
 
-    if (timeLeft > 0) {
-      const timerId = setInterval(() => {
-        setTimeLeft((prev) => (prev !== null ? prev - 1 : null));
-      }, 1000);
-      return () => clearInterval(timerId);
-    }
-  }, [timeLeft, onTimeUp, stopTimer]);
+    return () => clearInterval(timerId);
+  }, [timeLeft, onTimeUp]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -237,15 +251,15 @@ const SendEmail = async (
 
   try {
     await emailjs.send(
-      "service_bduhyu9", // EmailJS service ID
-      "template_kbpvxv5", // EmailJS template ID
+      "service_n3yyxqk", // EmailJS service ID
+      "template_xkt7ppd", // EmailJS template ID
       {
         question_1: question1Code,
         question_2: question2Code,
         question_3: question3Code,
         user_email: email,
       },
-      "owvTgwLmhQ_GADi-i" // EmailJS public key
+      "zM2Zx4ruVU5stZJV_" // EmailJS public key
     );
   } catch (error) {
     throw new Error("Failed to send email: " + error.message);
@@ -256,9 +270,13 @@ const SendEmail = async (
 const SubmitPopup = ({
   isVisible,
   onClose,
+  googleFormLink,
+  assessmentType,
 }: {
   isVisible: boolean;
   onClose: () => void;
+  googleFormLink: string;
+  assessmentType: "pre" | "post";
 }) => {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -280,7 +298,9 @@ const SubmitPopup = ({
     setIsSubmitting(true);
 
     try {
-      const savedCode = JSON.parse(localStorage.getItem("savedCode") || "{}");
+      const savedCode = JSON.parse(
+        localStorage.getItem(`${assessmentType}_savedCode`) || "{}"
+      );
       await SendEmail(email, savedCode); // Call the utility function
       setIsSubmitted(true);
     } catch (error) {
@@ -300,14 +320,18 @@ const SubmitPopup = ({
           <div>
             <h2 className="text-lg font-bold mb-4">Submission Successful!</h2>
             <p className="text-sm text-gray-600 mb-4">
-              Thank you for your time. Your submission has been recorded.
+              Your answers have been recorded. Please fill out the required
+              Google Form to complete the assessment by clicking the button
+              below.
             </p>
-            <button
-              className="px-4 py-2 bg-green-500 text-white text-sm font-semibold rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              onClick={onClose}
+            <a
+              href={googleFormLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-green-500 text-white text-sm font-semibold rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 inline-block text-center"
             >
-              Close
-            </button>
+              Continue
+            </a>
           </div>
         ) : (
           <div>
@@ -375,7 +399,7 @@ const StaticMessages = ({
             What to Expect:
           </p>
           <p className="text-lg text-gray-700 mb-4">
-            You'll have 15 minutes to solve three coding problems.
+            You'll have 25 minutes to solve three coding problems.
           </p>
           <p className="text-lg font-bold text-gray-700 mb-4">No Pressure:</p>
           <p className="text-lg text-gray-700 mb-4">
@@ -414,35 +438,30 @@ const StaticMessages = ({
 // ChatSection to display the selected question and its details
 const ChatSection = ({
   selectedQuestion,
+  questions,
 }: {
   selectedQuestion: number | null;
+  questions: {
+    id: number;
+    number: string;
+    title: string;
+    text: string;
+    example: string;
+  }[];
 }) => {
-  const questions = [
-    {
-      id: 1,
-      number: "Question 1:",
-      title: "Conditionals and Comparisons",
-      text: "Write a program that takes an input number and prints whether it is positive, negative, or zero.",
-      example: 'Example Input: 5\nExample Output: "Positive"',
-    },
-    {
-      id: 2,
-      number: "Question 2:",
-      title: "Loops",
-      text: "Write a program that prints all numbers from 1 to 10, inclusive.",
-      example: "Example Output:\n1\n2\n3\n...\n10",
-    },
-    {
-      id: 3,
-      number: "Question 3:",
-      title: "Basic Input and Output",
-      text: "Write a program that asks for a user’s name and prints a personalized greeting.",
-      example: 'Example Input: "Alice"\nExample Output: "Hello, Alice!"',
-    },
-  ];
-
   const question = questions.find((q) => q.id === selectedQuestion);
+  const [showNoResponse, setShowNoResponse] = useState(false);
+  const [showYesResponse, setShowYesResponse] = useState(false);
 
+  const handleYesClick = () => {
+    setShowYesResponse(true);
+    setShowNoResponse(false);
+  };
+
+  const handleNoClick = () => {
+    setShowNoResponse(true);
+    setShowYesResponse(false);
+  };
   return (
     <div className="w-1/3 bg-[#f8f8f8] border-r border-gray-300 flex flex-col min-w-[400px]">
       <h2 className="text-lg font-bold p-4 border-b">Chat</h2>
@@ -462,7 +481,10 @@ const ChatSection = ({
                   <p className="text-lg font-bold text-gray-700 mb-4">
                     {question.title}
                   </p>
-                  <p className="text-lg text-gray-700" mb-4>
+                  <p
+                    className="text-lg text-gray-700 mb-4"
+                    style={{ whiteSpace: "pre-wrap" }}
+                  >
                     {question.text}
                   </p>
                   <pre className="bg-gray-100 p-2 rounded text-lg text-gray-800 mt-2">
@@ -472,6 +494,111 @@ const ChatSection = ({
               </div>
             </div>
             <StaticMessages isWelcomeMessage={false} />
+            <div className="flex items-start mt-4">
+              <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center">
+                <span className="text-gray font-bold">B</span>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-gray-700">Bruno</p>
+                <div className="bg-gray-200 p-3 rounded-lg shadow">
+                  <p className="text-lg text-gray-700 mb-4">
+                    Would you like documentation?
+                  </p>
+                  <div className="flex space-x-3 justify-center">
+                    <button
+                      onClick={handleYesClick}
+                      className="px-4 py-2 bg-[#1f2937] text-white text-base font-semibold rounded-md hover:bg-[#374151] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1f2937]"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      onClick={handleNoClick}
+                      className="px-4 py-2 bg-gray-500 text-white text-base font-semibold rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                    >
+                      No
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {showYesResponse && (
+              <div className="flex items-start mt-4">
+                <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center">
+                  <span className="text-gray font-bold">B</span>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-gray-700">Bruno</p>
+                  <div className="bg-gray-200 p-3 rounded-lg shadow">
+                    <p className="text-lg text-gray-700 mb-6">
+                      Here's a cheat-sheet with the structure of console
+                      programs.
+                    </p>
+                    <p className="text-lg font-bold text-gray-700">Outline</p>
+                    <p
+                      className="text-lg text-gray-700 mb-4"
+                      style={{ whiteSpace: "pre-wrap" }}
+                    >
+                      The following code defines and calls a main() function:
+                    </p>
+                    <pre className="bg-gray-100 p-2 rounded text-lg text-gray-800 mt-2 mb-6">
+                      {"def main():\n" +
+                        "    # Your code goes here\n" +
+                        "if __name__ == '__main__':\n" +
+                        "    main()"}
+                    </pre>
+                    <p className="text-lg font-bold text-gray-700">Printing</p>
+                    <pre className="bg-gray-100 p-2 rounded text-lg text-gray-800 mt-2 mb-6">
+                      {"# writes hello world\n" +
+                        "print('hello world')\n" +
+                        "\n" +
+                        "# You can print variables\n" +
+                        "x = 12\n" +
+                        "print(x)\n" +
+                        "\n" +
+                        "# You can print many things\n" +
+                        "print('Value of x', x)"}
+                    </pre>
+                    <p className="text-lg font-bold text-gray-700">Input</p>
+                    <pre className="bg-gray-100 p-2 rounded text-lg text-gray-800 mt-2 mb-6">
+                      {"# gets input form the user\n" +
+                        "input_str = input('Prompt: ')"}
+                    </pre>
+                    <p className="text-lg font-bold text-gray-700">Variables</p>
+                    <pre className="bg-gray-100 p-2 rounded text-lg text-gray-800 mt-2 mb-6">
+                      {"# example var\n" +
+                        "variable_name = 12\n" +
+                        "\n" +
+                        "# example use of a variable\n" +
+                        "print(variable_name)\n" +
+                        "\n" +
+                        "# example reassignment\n" +
+                        "variable_name = variable_name + 2"}
+                    </pre>
+                    <p className="text-lg font-bold text-gray-700">Random</p>
+                    <pre className="bg-gray-100 p-2 rounded text-lg text-gray-800 mt-2 mb-6">
+                      {"# need to import the random library from Python before you use it \n" +
+                        "import random \n" +
+                        "\n" +
+                        "# generate a random number between 1-100 inclusive\n" +
+                        "rand_num = random.randint(1, 100)"}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            )}
+            {showNoResponse && (
+              <div className="flex items-start mt-4">
+                <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center">
+                  <span className="text-gray font-bold">B</span>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-gray-700">Bruno</p>
+                  <div className="bg-gray-200 p-3 rounded-lg shadow">
+                    <p className="text-lg text-gray-700">Sounds good.</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <StaticMessages isWelcomeMessage={true} />
@@ -491,7 +618,7 @@ const CodeSection = ({
   savedCode: string;
   onCodeChange: (code: string) => void;
 }) => {
-  const { editorRef } = usePreAssessment();
+  const { editorRef } = useAssessment();
   const editorContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -501,6 +628,9 @@ const CodeSection = ({
         value: savedCode,
         language: "python",
         theme: "vs-light",
+        tabSize: 4, // this and next two settings to fix indentation issue
+        insertSpaces: true,
+        detectIndentation: false,
         minimap: { enabled: false },
         lineHeight: 21,
         renderLineHighlight: "all",
@@ -554,9 +684,11 @@ const CodeSection = ({
 const QuestionSection = ({
   onQuestionClick,
   selectedQuestion,
+  googleFormLink,
 }: {
   onQuestionClick: (id: number) => void;
   selectedQuestion: number | null;
+  googleFormLink: string;
 }) => {
   const questions = [
     { id: 1, text: "Question 1" },
@@ -572,6 +704,10 @@ const QuestionSection = ({
 
   const handleClosePopup = () => {
     setIsPopupVisible(false);
+  };
+
+  const handleTimeUp = () => {
+    setIsPopupVisible(true);
   };
 
   return (
@@ -600,16 +736,23 @@ const QuestionSection = ({
         >
           Submit
         </button>
+        {selectedQuestion !== null && (
+          <Timer selectedQuestion={selectedQuestion} onTimeUp={handleTimeUp} />
+        )}
       </div>
 
-      <SubmitPopup isVisible={isPopupVisible} onClose={handleClosePopup} />
+      <SubmitPopup
+        isVisible={isPopupVisible}
+        onClose={handleClosePopup}
+        googleFormLink={googleFormLink}
+      />
     </div>
   );
 };
 
 // TerminalSection for rendering and managing the terminal interface
 const TerminalSection = () => {
-  const { terminalInstance } = usePreAssessment();
+  const { terminalInstance } = useAssessment();
   const terminalRef = useRef<HTMLDivElement | null>(null);
   const fitAddon = useRef(new FitAddon());
 
@@ -617,6 +760,7 @@ const TerminalSection = () => {
     if (terminalRef.current) {
       const terminal = new Terminal({
         cursorBlink: true,
+        convertEol: true,
         theme: {
           background: "#000000",
           foreground: "#ffffff",
@@ -656,37 +800,57 @@ const TerminalSection = () => {
   );
 };
 
-// PreAssessment component to manage the overall page structure and logic
-const PreAssessment: React.FC = () => {
+// Assessment component to manage the overall page structure and logic
+const Assessment: React.FC<{
+  questions: any[];
+  googleFormLink: string;
+  assessmentType: "pre" | "post";
+}> = ({ questions, googleFormLink, assessmentType }) => {
   const [savedCode, setSavedCode] = useState<{ [key: number]: string }>(() => {
-    const storedCode = localStorage.getItem("savedCode");
+    const storedCode = localStorage.getItem(`${assessmentType}_savedCode`);
     const defaultCode =
-      'def main(): \n \t""" \n \tYou should write your code here. Make sure to delete \n \tthe \'pass\' line before starting to write your own code.  \n \t""" \n \tpass \n \nif __name__ == \'__main__\': \n \tmain()';
+      "import random\n\n" +
+      "def main():\n" +
+      '    """\n' +
+      "    You should write your code here. Make sure to delete\n" +
+      "    the 'pass' line before starting to write your own code.\n" +
+      '    """\n' +
+      "    pass\n\n" +
+      "if __name__ == '__main__':\n" +
+      "    main()";
 
     return storedCode
       ? JSON.parse(storedCode)
       : {
-          1: "# question 1 \n" + defaultCode,
-          2: "# question 2 \n" + defaultCode,
-          3: "# question 3 \n" + defaultCode,
+          1: "# question 1\n" + defaultCode,
+          2: "# question 2\n" + defaultCode,
+          3: "# question 3\n" + defaultCode,
         };
   });
 
   const [selectedQuestion, setSelectedQuestion] = useState<number | null>(
     () => {
-      const storedQuestion = localStorage.getItem("selectedQuestion");
+      const storedQuestion = localStorage.getItem(
+        `${assessmentType}_selectedQuestion`
+      );
       return storedQuestion ? parseInt(storedQuestion, 10) : null;
     }
   );
 
   useEffect(() => {
     if (selectedQuestion !== null) {
-      localStorage.setItem("selectedQuestion", selectedQuestion.toString());
+      localStorage.setItem(
+        `${assessmentType}_selectedQuestion`,
+        selectedQuestion.toString()
+      );
     }
   }, [selectedQuestion]);
 
   useEffect(() => {
-    localStorage.setItem("savedCode", JSON.stringify(savedCode));
+    localStorage.setItem(
+      `${assessmentType}_savedCode`,
+      JSON.stringify(savedCode)
+    );
   }, [savedCode]);
 
   const handleCodeChange = (code: string) => {
@@ -699,12 +863,15 @@ const PreAssessment: React.FC = () => {
   };
 
   return (
-    <PreAssessmentProvider>
+    <AssessmentProvider>
       <div className="h-screen flex flex-col">
         <NavBar />
 
         <div className="flex flex-grow overflow-hidden">
-          <ChatSection selectedQuestion={selectedQuestion} />
+          <ChatSection
+            selectedQuestion={selectedQuestion}
+            questions={questions}
+          />
 
           <div className="flex flex-col flex-grow">
             <div className="flex flex-grow">
@@ -717,14 +884,15 @@ const PreAssessment: React.FC = () => {
               <QuestionSection
                 onQuestionClick={setSelectedQuestion}
                 selectedQuestion={selectedQuestion}
+                googleFormLink={googleFormLink}
               />
             </div>
             <TerminalSection />
           </div>
         </div>
       </div>
-    </PreAssessmentProvider>
+    </AssessmentProvider>
   );
 };
 
-export default PreAssessment;
+export default Assessment;

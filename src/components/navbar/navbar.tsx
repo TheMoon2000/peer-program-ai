@@ -225,6 +225,14 @@ export default function Navbar(props: Props) {
       )}
       <a
         className="ml-3 inline-flex items-center rounded-md bg-[#1f2937] border border-white px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#374151] focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-[#1f2937]"
+        href="https://docs.google.com/document/d/1roGx7zld6Gl3fslhMdOAd7K7mbTKQW_cxiuqDXc8n_Y/edit?tab=t.0"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        📄 View Docs
+      </a>
+      <a
+        className="ml-3 inline-flex items-center rounded-md bg-[#1f2937] border border-white px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#374151] focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-[#1f2937]"
         href="https://forms.gle/s6uH68oB3C85q9yb7"
         target="_blank"
         rel="noopener noreferrer"

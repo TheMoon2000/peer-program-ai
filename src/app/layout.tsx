@@ -6,6 +6,7 @@ import ThemeProvider from "src/theme";
 import { primaryFont } from "src/theme/typography";
 import SnackbarProvider from "src/components/snackbar/snackbar-provider";
 import { SettingsProvider } from "@/components/settings";
+import SmartlookInit from "./smartlook";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,6 +24,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         {" "}
+        <SmartlookInit />
         <SettingsProvider
           defaultSettings={{
             themeMode: "light", // 'light' | 'dark'

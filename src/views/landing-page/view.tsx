@@ -41,15 +41,31 @@ export default function LandingPage() {
     number | undefined
   >();
 
+
+  let newlineCharacter = '\n'; // Default to '\n' for compatibility
+
+  if (typeof window !== "undefined" && typeof navigator !== "undefined") {
+    const userAgent = navigator.userAgent;
+    // Detect the OS using userAgent
+    if (userAgent.indexOf('Win') !== -1) {
+        newlineCharacter = '\r\n';
+    } else if (userAgent.indexOf('Mac') !== -1) {
+        newlineCharacter = '\n';
+    } else if (userAgent.indexOf('Linux') !== -1) {
+        newlineCharacter = '\n';
+    } else if (userAgent.indexOf('Android') !== -1) {
+        newlineCharacter = '\n';
+    } else if (userAgent.indexOf('like Mac') !== -1) {
+        newlineCharacter = '\n';
+    }
+  }
+
   const joinQueue = useCallback(() => {
     localStorage.setItem("email", email);
     localStorage.setItem("name", name);
+    localStorage.setItem("newlineCharacter", newlineCharacter)
 
-    queueSocket.current = new WebSocket(
-      `wss://${HOST}/queue/socket?email=${encodeURIComponent(
-        email
-      )}&name=${encodeURIComponent(name)}`
-    );
+    queueSocket.current = new WebSocket(`wss://${HOST}/queue/socket?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&newlineCharacter=${encodeURIComponent(newlineCharacter)}`);
     queueSocket.current.onmessage = (e) => {
       const data = JSON.parse(e.data);
       console.log("received", data);
@@ -70,6 +86,7 @@ export default function LandingPage() {
     e.preventDefault();
     localStorage.setItem("email", email);
     localStorage.setItem("name", name);
+    localStorage.setItem("newlineCharacter", newlineCharacter)
     setLoading(true);
     // if mobile
     const userAgent = navigator.userAgent || navigator.vendor;
