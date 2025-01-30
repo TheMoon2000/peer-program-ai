@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 const PreAssessment = dynamic(() => import("../assessment"), {
   ssr: false,
 });
-//   "Generate a random number between 1 to 100 and determine the " +
+
 const questions = [
   {
     id: 1,
