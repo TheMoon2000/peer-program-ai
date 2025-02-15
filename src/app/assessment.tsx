@@ -639,7 +639,6 @@ const CodeSection = ({
         suggestLineHeight: 25,
         lineNumbersMinChars: 4,
         padding: { top: 5 },
-        theme: "ursa",
         fontFamily: "Menlo, Consolas, monospace",
         automaticLayout: true,
       });
@@ -685,10 +684,12 @@ const QuestionSection = ({
   onQuestionClick,
   selectedQuestion,
   googleFormLink,
+  assessmentType,
 }: {
   onQuestionClick: (id: number) => void;
   selectedQuestion: number | null;
   googleFormLink: string;
+  assessmentType: "pre" | "post";
 }) => {
   const questions = [
     { id: 1, text: "Question 1" },
@@ -737,7 +738,11 @@ const QuestionSection = ({
           Submit
         </button>
         {selectedQuestion !== null && (
-          <Timer selectedQuestion={selectedQuestion} onTimeUp={handleTimeUp} />
+          <Timer
+            selectedQuestion={selectedQuestion}
+            onTimeUp={handleTimeUp}
+            assessmentType={assessmentType}
+          />
         )}
       </div>
 
@@ -745,6 +750,7 @@ const QuestionSection = ({
         isVisible={isPopupVisible}
         onClose={handleClosePopup}
         googleFormLink={googleFormLink}
+        assessmentType={assessmentType}
       />
     </div>
   );
@@ -885,6 +891,7 @@ const Assessment: React.FC<{
                 onQuestionClick={setSelectedQuestion}
                 selectedQuestion={selectedQuestion}
                 googleFormLink={googleFormLink}
+                assessmentType={assessmentType}
               />
             </div>
             <TerminalSection />
